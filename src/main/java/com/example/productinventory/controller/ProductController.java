@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductController {
 
   private final ProductService productService;
+  private final Logger logger = LoggerFactory.getLogger(ProductController.class);
 
   @Autowired
   public ProductController(ProductService productService) {
@@ -50,7 +53,9 @@ public class ProductController {
     }
   )
   public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
+    logger.info("Creating product: {}", productDTO);
     Product createdProduct = productService.createProduct(productDTO);
+    logger.info("Product created successfully: {}", createdProduct);
     return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
   }
 
@@ -77,10 +82,11 @@ public class ProductController {
       @Parameter(description = "Sort direction", example = "asc")
           @RequestParam(defaultValue = "asc")
           String direction) {
-
+    
+    logger.info("Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}", page, size, sortBy, direction);
     Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
     PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-
+    logger.info("Successfully retrieved {} products", productService.getAllProducts(pageRequest).getTotalElements());
     Page<Product> products = productService.getAllProducts(pageRequest);
     return ResponseEntity.ok(products);
   }
@@ -102,8 +108,10 @@ public class ProductController {
       @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
     try {
       Product product = productService.getProductById(id);
+      logger.info("Successfully retrieved product: {}", product);
       return ResponseEntity.ok(product);
     } catch (ProductNotFoundException e) {
+      logger.warn("Product not found with ID: {}", id);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }
@@ -133,10 +141,13 @@ public class ProductController {
           Integer version) {
     try {
       Product updatedProduct = productService.updateProduct(id, productDTO, version);
+      logger.info("Product updated successfully: {}", updatedProduct);
       return ResponseEntity.ok(updatedProduct);
     } catch (ProductNotFoundException e) {
+      logger.warn("Product not found for update with ID: {}", id);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     } catch (jakarta.persistence.OptimisticLockException e) {
+      logger.error("Concurrent modification conflict for product ID: {}", id);
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Product data has been updated by another user. Please refresh and try again.");
@@ -156,8 +167,10 @@ public class ProductController {
       @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
     try {
       productService.deleteProduct(id);
+      logger.info("Product deleted successfully with ID: {}", id);
       return ResponseEntity.noContent().build();
     } catch (ProductNotFoundException e) {
+      logger.warn("Product not found for deletion with ID: {}", id);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }

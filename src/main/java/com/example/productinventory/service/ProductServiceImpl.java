@@ -50,13 +50,13 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public Page<Product> getAllProducts(Pageable pageable) {
-    logger.debug("Retrieving all products with pagination: {}", pageable);
+    logger.info("Retrieving all products with pagination: {}", pageable);
     return productRepository.findAll(pageable);
   }
 
   @Override
   public Product getProductById(Long id) {
-    logger.debug("Retrieving product by ID: {}", id);
+    logger.info("Retrieving product by ID: {}", id);
     return productRepository
         .findById(id)
         .orElseThrow(
@@ -111,27 +111,27 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public Page<Product> searchProductsByName(String name, Pageable pageable) {
-    logger.debug("Searching products by name: {}", name);
+    logger.info("Searching products by name: {}", name);
     return productRepository.findByNameContainingIgnoreCase(name, pageable);
   }
 
   @Override
   public Page<Product> findProductsByPriceRange(
       BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
-    logger.debug("Searching products by price range: {} - {}", minPrice, maxPrice);
+    logger.info("Searching products by price range: {} - {}", minPrice, maxPrice);
     return productRepository.findByPriceBetween(minPrice, maxPrice, pageable);
   }
 
   @Override
   public Page<Product> findProductsByQuantityRange(
       Integer minQuantity, Integer maxQuantity, Pageable pageable) {
-    logger.debug("Searching products by quantity range: {} - {}", minQuantity, maxQuantity);
+    logger.info("Searching products by quantity range: {} - {}", minQuantity, maxQuantity);
     return productRepository.findByQuantityBetween(minQuantity, maxQuantity, pageable);
   }
 
   @Override
   public List<Product> findLowStockProducts(Integer threshold) {
-    logger.debug("Finding low stock products with threshold: {}", threshold);
+    logger.info("Finding low stock products with threshold: {}", threshold);
     return productRepository.findLowStockProducts(threshold);
   }
 
@@ -143,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
       Integer minQuantity,
       Integer maxQuantity,
       Pageable pageable) {
-    logger.debug(
+    logger.info(
         "Searching products by criteria - name: {}, price: {}-{}, quantity: {}-{}",
         name,
         minPrice,
@@ -156,7 +156,7 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public Product getProductBySku(String sku) {
-    logger.debug("Retrieving product by SKU: {}", sku);
+    logger.info("Retrieving product by SKU: {}", sku);
     return productRepository
         .findBySku(sku)
         .orElseThrow(
