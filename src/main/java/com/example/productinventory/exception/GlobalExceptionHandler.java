@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -24,7 +26,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ProductConflictException.class)
   public ResponseEntity<Object> handleConflictException(
       ProductConflictException ex, WebRequest request) {
-    logger.error("Conflict exception occurred: {}", ex.getMessage(), ex); // Log the exception
+    logger.error("Conflict exception occurred: {}", ex.getMessage(), ex);
     return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
   }
 
@@ -41,6 +43,27 @@ public class GlobalExceptionHandler {
     body.put("path", request.getDescription(false).replace("uri=", ""));
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<Object> handleValidationExceptions(
+      MethodArgumentNotValidException ex, WebRequest request) {
+    logger.error("Validation failed: {}", ex.getMessage(), ex);
+
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("timestamp", LocalDateTime.now());
+    body.put("status", HttpStatus.BAD_REQUEST.value());
+    body.put("error", "Validation Error");
+    body.put("message", "Validation failed for the request");
+
+    Map<String, String> errors = new LinkedHashMap<>();
+    for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+      errors.put(error.getField(), error.getDefaultMessage());
+    }
+    body.put("errors", errors);
+    body.put("path", request.getDescription(false).replace("uri=", ""));
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 
   @ExceptionHandler(ProductBadRequestException.class)

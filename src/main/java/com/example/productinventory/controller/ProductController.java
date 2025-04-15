@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,30 +63,29 @@ public class ProductController {
   public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
     logger.info("Creating product: {}", productDTO);
 
-    // Validate input fields
-    if (productDTO.getName() == null || productDTO.getName().isEmpty()) {
-      logger.warn("Invalid input: Product name is required.");
-      throw new ProductBadRequestException("Product name is required.");
-    }
-    if (productDTO.getSku() == null || productDTO.getSku().isEmpty()) {
-      logger.warn("Invalid input: Product SKU is required.");
-      throw new ProductBadRequestException("Product SKU is required.");
-    }
-    if (productDTO.getPrice() == null || productDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-      logger.warn("Invalid input: Product price must be greater than zero.");
-      throw new ProductBadRequestException("Product price must be greater than zero.");
-    }
-    if (productDTO.getQuantity() == null || productDTO.getQuantity() < 0) {
-      logger.warn("Invalid input: Product quantity cannot be negative.");
-      throw new ProductBadRequestException("Product quantity cannot be negative.");
-    }
-
     // Check for duplicate SKU
     if (productService.existsBySku(productDTO.getSku())) {
       logger.warn("Conflict: Product with SKU {} already exists", productDTO.getSku());
       throw new ProductConflictException(
           "A product with SKU " + productDTO.getSku() + " already exists.");
     }
+
+    //  // Check for category existence if category_id is provided
+    //  if (productDTO.getCategoryId() != null) {
+    //   // Placeholder for category existence check
+    //   boolean categoryExists = false; // Initialize to false
+
+    //   // This should be replaced with actual category service check when implemented
+    //   // Example: categoryExists = categoryService.existsById(productDTO.getCategoryId());
+
+    //   // Simulating the check for demonstration purposes
+    //   if (!categoryExists) {
+    //       logger.warn("Category ID {} provided, but it does not exist.",
+    // productDTO.getCategoryId());
+    //       throw new ProductNotFoundException("Category with ID " + productDTO.getCategoryId() + "
+    // does not exist.");
+    //   }
+    // }
 
     try {
       Product createdProduct = productService.createProduct(productDTO);
