@@ -165,4 +165,12 @@ public class ProductServiceImpl implements ProductService {
               return new ProductNotFoundException("Product not found with SKU: " + sku);
             });
   }
+
+  @Override
+  public boolean existsBySku(String sku) {
+    logger.info("Checking if product exists with SKU: {}", sku);
+    boolean exists = productRepository.existsBySku(sku);
+    logger.info("Product exists with SKU {}: {}", sku, exists);
+    return exists;
+  }
 }

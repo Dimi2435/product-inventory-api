@@ -124,4 +124,12 @@ public interface ProductService {
    * @throws ProductNotFoundException if product not found
    */
   Product getProductBySku(String sku) throws ProductNotFoundException;
+
+  /**
+   * Checks if a product exists by its SKU
+   *
+   * @param sku the product SKU
+   * @return true if the product exists, false otherwise
+   */
+  boolean existsBySku(String sku);
 }

@@ -30,7 +30,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   Page<Product> findByQuantityBetween(Integer minQuantity, Integer maxQuantity, Pageable pageable);
 
   /** Find products by SKU (exact match) */
+  @Query("SELECT p FROM Product p WHERE p.sku = :sku")
   Optional<Product> findBySku(String sku);
+
+  /** Check if a product exists by SKU (exact match) */
+  @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Product p WHERE p.sku = :sku")
+  boolean existsBySku(String sku);
 
   /** Find products with low stock (quantity less than threshold) */
   @Query("SELECT p FROM Product p WHERE p.quantity < :threshold")

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,17 +44,20 @@ public class Product {
   private String description;
 
   @NotNull(message = "Price is required")
+  @Positive(message = "Product price must be greater than zero.")
   @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
   @Column(nullable = false, precision = 10, scale = 2)
   @Schema(description = "Price of the product", example = "999.99", required = true)
   private BigDecimal price;
 
   @NotNull(message = "Quantity is required")
+  @Positive(message = "Product quantity cannot be negative.")
   @Min(value = 0, message = "Quantity must be non-negative")
   @Column(nullable = false)
   @Schema(description = "Quantity of the product in stock", example = "10", required = true)
   private Integer quantity;
 
+  @NotNull(message = "Product SKU is required.")
   @Column(unique = true, length = 50)
   @Schema(description = "Stock Keeping Unit (SKU) of the product", example = "LAP-001")
   private String sku;

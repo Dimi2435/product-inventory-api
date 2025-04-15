@@ -1,6 +1,9 @@
 package com.example.productinventory.controller;
 
 import com.example.productinventory.dto.ProductDTO;
+import com.example.productinventory.exception.ProductBadRequestException;
+import com.example.productinventory.exception.ProductConflictException;
+import com.example.productinventory.exception.ProductInternalServerErrorException;
 import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,14 +53,57 @@ public class ProductController {
         content = @Content(schema = @Schema(implementation = Product.class))
       ),
       @ApiResponse(responseCode = "400", description = "Invalid input"),
+      @ApiResponse(responseCode = "401", description = "Authentication required"),
+      @ApiResponse(responseCode = "403", description = "User does not have permission"),
+      @ApiResponse(responseCode = "404", description = "Related resource not found"),
+      @ApiResponse(responseCode = "409", description = "Conflict with current state"),
+      @ApiResponse(responseCode = "422", description = "Validation errors"),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
   public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
     logger.info("Creating product: {}", productDTO);
-    Product createdProduct = productService.createProduct(productDTO);
-    logger.info("Product created successfully: {}", createdProduct);
-    return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+
+    // Validate input fields
+    if (productDTO.getName() == null || productDTO.getName().isEmpty()) {
+      logger.warn("Invalid input: Product name is required.");
+      throw new ProductBadRequestException("Product name is required.");
+    }
+    if (productDTO.getSku() == null || productDTO.getSku().isEmpty()) {
+      logger.warn("Invalid input: Product SKU is required.");
+      throw new ProductBadRequestException("Product SKU is required.");
+    }
+    if (productDTO.getPrice() == null || productDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+      logger.warn("Invalid input: Product price must be greater than zero.");
+      throw new ProductBadRequestException("Product price must be greater than zero.");
+    }
+    if (productDTO.getQuantity() == null || productDTO.getQuantity() < 0) {
+      logger.warn("Invalid input: Product quantity cannot be negative.");
+      throw new ProductBadRequestException("Product quantity cannot be negative.");
+    }
+
+    // Check for duplicate SKU
+    if (productService.existsBySku(productDTO.getSku())) {
+      logger.warn("Conflict: Product with SKU {} already exists", productDTO.getSku());
+      throw new ProductConflictException(
+          "A product with SKU " + productDTO.getSku() + " already exists.");
+    }
+
+    try {
+      Product createdProduct = productService.createProduct(productDTO);
+      logger.info("Product created successfully: {}", createdProduct);
+      return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    } catch (ProductBadRequestException e) {
+      logger.error("Bad request error: {}", e.getMessage());
+      throw e; // Rethrow to be handled by the global exception handler
+    } catch (ProductConflictException e) {
+      logger.error("Conflict error: {}", e.getMessage());
+      throw e; // Rethrow to be handled by the global exception handler
+    } catch (Exception e) {
+      logger.error("Unexpected error occurred while creating product: {}", e.getMessage(), e);
+      throw new ProductInternalServerErrorException(
+          "An unexpected error occurred while creating the product.");
+    }
   }
 
   @GetMapping
@@ -82,11 +129,18 @@ public class ProductController {
       @Parameter(description = "Sort direction", example = "asc")
           @RequestParam(defaultValue = "asc")
           String direction) {
-    
-    logger.info("Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}", page, size, sortBy, direction);
+
+    logger.info(
+        "Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}",
+        page,
+        size,
+        sortBy,
+        direction);
     Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
     PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-    logger.info("Successfully retrieved {} products", productService.getAllProducts(pageRequest).getTotalElements());
+    logger.info(
+        "Successfully retrieved {} products",
+        productService.getAllProducts(pageRequest).getTotalElements());
     Page<Product> products = productService.getAllProducts(pageRequest);
     return ResponseEntity.ok(products);
   }
