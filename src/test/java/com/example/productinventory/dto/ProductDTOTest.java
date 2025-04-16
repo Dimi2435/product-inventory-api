@@ -12,6 +12,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Unit tests for the {@link ProductDTO} data transfer object. */
 public class ProductDTOTest {
 
   private Validator validator;
@@ -24,12 +25,14 @@ public class ProductDTOTest {
   private static final BigDecimal VALID_WEIGHT = BigDecimal.valueOf(1.5);
   private static final String VALID_DIMENSIONS = "30x20x5";
 
+  /** Set up the validator before each test. */
   @BeforeEach
   public void setUp() {
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     validator = factory.getValidator();
   }
 
+  /** Test that a valid ProductDTO passes validation. */
   @Test
   public void testValidProductDTO() {
     ProductDTO productDTO = createValidProductDTO();
@@ -38,6 +41,7 @@ public class ProductDTOTest {
     assertTrue(violations.isEmpty(), "ProductDTO should be valid");
   }
 
+  /** Test that a ProductDTO without a name fails validation. */
   @Test
   public void testInvalidProductDTO_NoName() {
     ProductDTO productDTO = createValidProductDTO();
@@ -48,6 +52,7 @@ public class ProductDTOTest {
     assertEquals("Product name is required.", violations.iterator().next().getMessage());
   }
 
+  /** Test that a ProductDTO with a negative price fails validation. */
   @Test
   public void testInvalidProductDTO_NegativePrice() {
     ProductDTO productDTO = createValidProductDTO();
@@ -58,6 +63,7 @@ public class ProductDTOTest {
     assertEquals("Price must be greater than 0", violations.iterator().next().getMessage());
   }
 
+  /** Test that a ProductDTO with an invalid SKU fails validation. */
   @Test
   public void testInvalidProductDTO_InvalidSKU() {
     ProductDTO productDTO = createValidProductDTO();
@@ -70,6 +76,11 @@ public class ProductDTOTest {
         violations.iterator().next().getMessage());
   }
 
+  /**
+   * Creates and returns a valid ProductDTO for testing.
+   *
+   * @return a valid ProductDTO
+   */
   private ProductDTO createValidProductDTO() {
     ProductDTO productDTO = new ProductDTO();
     productDTO.setName(VALID_NAME);

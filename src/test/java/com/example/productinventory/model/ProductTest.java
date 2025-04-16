@@ -13,16 +13,19 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Unit tests for the {@link Product} model class. */
 public class ProductTest {
 
   private Validator validator;
 
+  /** Set up the validator before each test. */
   @BeforeEach
   public void setUp() {
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     validator = factory.getValidator();
   }
 
+  /** Test that a valid product passes validation. */
   @Test
   public void testValidProduct() {
     Product product = new Product();
@@ -40,6 +43,7 @@ public class ProductTest {
     assertTrue(violations.isEmpty(), "Product should be valid");
   }
 
+  /** Test that a product without a name fails validation. */
   @Test
   public void testInvalidProduct_NoName() {
     Product product = new Product();
@@ -55,6 +59,7 @@ public class ProductTest {
     assertEquals("Name is required", violations.iterator().next().getMessage());
   }
 
+  /** Test that a product with a negative price fails validation. */
   @Test
   public void testInvalidProduct_NegativePrice() {
     Product product = new Product();
@@ -72,6 +77,7 @@ public class ProductTest {
         "Product price must be greater than zero.", violations.iterator().next().getMessage());
   }
 
+  /** Test that a product with an invalid SKU fails validation. */
   @Test
   public void testInvalidProduct_InvalidSKU() {
     Product product = new Product();
@@ -90,6 +96,7 @@ public class ProductTest {
         violations.iterator().next().getMessage());
   }
 
+  /** Test that a product with a negative quantity fails validation. */
   @Test
   public void testInvalidProduct_NegativeQuantity() {
     Product product = new Product();

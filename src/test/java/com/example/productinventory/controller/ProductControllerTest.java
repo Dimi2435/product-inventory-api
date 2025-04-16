@@ -34,6 +34,10 @@ public class ProductControllerTest {
   private ProductDTO productDTO;
   private Product product;
 
+  /**
+   * Set up the test environment before each test. Initializes a valid ProductDTO and Product object
+   * for testing.
+   */
   @BeforeEach
   void setUp() {
     productDTO = new ProductDTO();
@@ -56,6 +60,10 @@ public class ProductControllerTest {
     product.setDimensions("30x20x5");
   }
 
+  /**
+   * Test the creation of a product with valid input. Expects a 201 Created response with the
+   * product details.
+   */
   @Test
   void createProduct_validInput_returnsCreated() {
     when(productService.createProduct(any(ProductDTO.class))).thenReturn(product);
@@ -75,6 +83,10 @@ public class ProductControllerTest {
         .isEqualTo(product.getName());
   }
 
+  /**
+   * Test the creation of a product with invalid input. Expects a 400 Bad Request response with an
+   * error message.
+   */
   @Test
   void createProduct_invalidInput_returnsBadRequest() {
     // Simulate invalid input by throwing a ProductBadRequestException
@@ -94,6 +106,10 @@ public class ProductControllerTest {
         .isEqualTo("Validation failed for the request");
   }
 
+  /**
+   * Test the creation of a product with a duplicate SKU. Expects a 409 Conflict response with an
+   * error message.
+   */
   @Test
   void createProduct_duplicateSku_returnsConflict() {
     when(productService.createProduct(any(ProductDTO.class)))
@@ -112,6 +128,10 @@ public class ProductControllerTest {
         .isEqualTo("A product with SKU TEST-SKU already exists.");
   }
 
+  /**
+   * Test retrieving a product by its existing ID. Expects a 200 OK response with the product
+   * details.
+   */
   @Test
   void getProductById_existingId_returnsOk() {
     when(productService.getProductById(1L)).thenReturn(product);
@@ -129,6 +149,10 @@ public class ProductControllerTest {
         .isEqualTo(product.getName());
   }
 
+  /**
+   * Test retrieving a product by a non-existing ID. Expects a 404 Not Found response with an error
+   * message.
+   */
   @Test
   void getProductById_nonExistingId_returnsNotFound() {
     when(productService.getProductById(1L))
@@ -145,6 +169,10 @@ public class ProductControllerTest {
         .isEqualTo("Product not found with ID: 1");
   }
 
+  /**
+   * Test updating a product with an existing ID and valid version. Expects a 200 OK response with
+   * the updated product details.
+   */
   @Test
   void updateProduct_existingIdAndValidVersion_returnsOk() {
     when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1))).thenReturn(product);
@@ -164,6 +192,10 @@ public class ProductControllerTest {
         .isEqualTo(product.getName());
   }
 
+  /**
+   * Test updating a product with a non-existing ID. Expects a 404 Not Found response with an error
+   * message.
+   */
   @Test
   void updateProduct_nonExistingId_returnsNotFound() {
     when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
@@ -182,6 +214,10 @@ public class ProductControllerTest {
         .isEqualTo("Product not found with ID: 1");
   }
 
+  /**
+   * Test updating a product with a version mismatch. Expects a 409 Conflict response with an error
+   * message.
+   */
   @Test
   void updateProduct_versionMismatch_returnsConflict() {
     when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
@@ -201,6 +237,7 @@ public class ProductControllerTest {
         .isEqualTo("Product data has been updated by another user.");
   }
 
+  /** Test deleting a product with an existing ID. Expects a 204 No Content response. */
   @Test
   void deleteProduct_existingId_returnsNoContent() {
     doNothing().when(productService).deleteProduct(1L);
@@ -213,6 +250,10 @@ public class ProductControllerTest {
         .isNoContent(); // 204 No Content
   }
 
+  /**
+   * Test deleting a product with a non-existing ID. Expects a 404 Not Found response with an error
+   * message.
+   */
   @Test
   void deleteProduct_nonExistingId_returnsNotFound() {
     doThrow(new ProductNotFoundException("Product not found with ID: 1"))

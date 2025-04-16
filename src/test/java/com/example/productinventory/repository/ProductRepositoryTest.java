@@ -25,19 +25,22 @@
 //     productRepository.deleteAll();
 //   }
 
-//   @Test
-//   public void testSaveAndFindProduct() {
+//   private Product createAndSaveProduct(String name, String sku, BigDecimal price, int quantity) {
 //     Product product = new Product();
-//     product.setName("Test Product");
+//     product.setName(name);
 //     product.setDescription("A test product.");
-//     product.setPrice(BigDecimal.valueOf(100.00));
-//     product.setQuantity(10);
-//     product.setSku("TEST-SKU");
+//     product.setPrice(price);
+//     product.setQuantity(quantity);
+//     product.setSku(sku);
 //     product.setWeight(BigDecimal.valueOf(1.0));
 //     product.setDimensions("30x20x5");
+//     return productRepository.save(product);
+//   }
 
-//     // Save the product
-//     Product savedProduct = productRepository.save(product);
+//   @Test
+//   public void testSaveAndFindProduct() {
+//     Product savedProduct =
+//         createAndSaveProduct("Test Product", "TEST-SKU", BigDecimal.valueOf(100.00), 10);
 
 //     // Find the product by ID
 //     Optional<Product> foundProduct = productRepository.findById(savedProduct.getId());
@@ -48,17 +51,7 @@
 
 //   @Test
 //   public void testFindBySku() {
-//     Product product = new Product();
-//     product.setName("Test Product");
-//     product.setDescription("A test product.");
-//     product.setPrice(BigDecimal.valueOf(100.00));
-//     product.setQuantity(10);
-//     product.setSku("TEST-SKU");
-//     product.setWeight(BigDecimal.valueOf(1.0));
-//     product.setDimensions("30x20x5");
-
-//     // Save the product
-//     productRepository.save(product);
+//     createAndSaveProduct("Test Product", "TEST-SKU", BigDecimal.valueOf(100.00), 10);
 
 //     // Find the product by SKU
 //     Optional<Product> foundProduct = productRepository.findBySku("TEST-SKU");
@@ -68,18 +61,16 @@
 //   }
 
 //   @Test
-//   public void testExistsBySku() {
-//     Product product = new Product();
-//     product.setName("Test Product");
-//     product.setDescription("A test product.");
-//     product.setPrice(BigDecimal.valueOf(100.00));
-//     product.setQuantity(10);
-//     product.setSku("TEST-SKU");
-//     product.setWeight(BigDecimal.valueOf(1.0));
-//     product.setDimensions("30x20x5");
+//   public void testFindByNonExistingSku() {
+//     // Attempt to find a product by a non-existing SKU
+//     Optional<Product> foundProduct = productRepository.findBySku("NON-EXISTING-SKU");
 
-//     // Save the product
-//     productRepository.save(product);
+//     assertThat(foundProduct).isNotPresent();
+//   }
+
+//   @Test
+//   public void testExistsBySku() {
+//     createAndSaveProduct("Test Product", "TEST-SKU", BigDecimal.valueOf(100.00), 10);
 
 //     // Check if the SKU exists
 //     boolean exists = productRepository.existsBySku("TEST-SKU");
@@ -88,20 +79,18 @@
 //   }
 
 //   @Test
-//   public void testFindByPriceBetween() {
-//     Product product1 = new Product();
-//     product1.setName("Product 1");
-//     product1.setPrice(BigDecimal.valueOf(50.00));
-//     product1.setQuantity(5);
-//     product1.setSku("SKU-1");
-//     productRepository.save(product1);
+//   public void testExistsByNonExistingSku() {
+//     // Check if a non-existing SKU exists
+//     boolean exists = productRepository.existsBySku("NON-EXISTING-SKU");
 
-//     Product product2 = new Product();
-//     product2.setName("Product 2");
-//     product2.setPrice(BigDecimal.valueOf(150.00));
-//     product2.setQuantity(10);
-//     product2.setSku("SKU-2");
-//     productRepository.save(product2);
+//     assertThat(exists).isFalse();
+//   }
+
+//   @Test
+//   public void testFindByPriceBetween() {
+//     Product product1 = createAndSaveProduct("Product 1", "SKU-1", BigDecimal.valueOf(50.00), 5);
+//     Product product2 = createAndSaveProduct("Product 2", "SKU-2", BigDecimal.valueOf(150.00),
+// 10);
 
 //     // Find products within a price range
 //     Page<Product> products =
@@ -109,5 +98,18 @@
 //             BigDecimal.valueOf(40.00), BigDecimal.valueOf(100.00), Pageable.unpaged());
 
 //     assertThat(products.getContent()).containsExactly(product1);
+//   }
+
+//   @Test
+//   public void testFindByPriceBetween_NoProductsInRange() {
+//     createAndSaveProduct("Product 1", "SKU-1", BigDecimal.valueOf(150.00), 5);
+//     createAndSaveProduct("Product 2", "SKU-2", BigDecimal.valueOf(200.00), 10);
+
+//     // Find products within a price range that has no products
+//     Page<Product> products =
+//         productRepository.findByPriceBetween(
+//             BigDecimal.valueOf(40.00), BigDecimal.valueOf(100.00), Pageable.unpaged());
+
+//     assertThat(products.getContent()).isEmpty();
 //   }
 // }
