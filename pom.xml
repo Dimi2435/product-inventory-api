@@ -25,9 +25,6 @@
         <flyway.version>10.7.1</flyway.version>
         <junit.version>5.10.2</junit.version>
         <jacoco.version>0.8.11</jacoco.version>
-        <!-- <spring.flyway.url>jdbc:h2:file:C:/Users/Dimitrios.Milios/Phoenix-Workspace/product-inventory-api/data/mydb;DB_CLOSE_ON_EXIT=TRUE</spring.flyway.url>
-        <spring.flyway.user>sa</spring.flyway.user>
-        <spring.flyway.password></spring.flyway.password> -->
     </properties>
 
     <dependencies>
@@ -180,11 +177,6 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>${flyway.version}</version>
-                <configuration>
-                    <url>${spring.flyway.url}</url>
-                    <user>${spring.flyway.user}</user>
-                    <password>${spring.flyway.password}</password>
-                </configuration>
             </plugin>
         </plugins>
         <pluginManagement>
