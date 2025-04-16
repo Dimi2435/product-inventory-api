@@ -52,7 +52,19 @@ public class ProductController {
   )
   @ApiResponses(
     value = {
-      @ApiResponse(responseCode = "201", description = "Product created successfully"),
+      @ApiResponse(
+        responseCode = "201",
+        description = "Product created successfully",
+        content =
+            @Content(
+              schema =
+                  @Schema(
+                    implementation = Product.class,
+                    example =
+                        "{ \"id\": 1, \"name\": \"Premium Laptop\", \"description\": \"High-performance laptop with 16GB RAM\", \"price\": 999.99, \"quantity\": 10, \"sku\": \"LAP-001\" }"
+                  )
+            )
+      ),
       @ApiResponse(responseCode = "400", description = "Invalid input"),
       @ApiResponse(responseCode = "409", description = "Conflict with current state"),
       @ApiResponse(responseCode = "500", description = "Internal server error")
@@ -81,7 +93,19 @@ public class ProductController {
   )
   @ApiResponses(
     value = {
-      @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
+      @ApiResponse(
+        responseCode = "200",
+        description = "Successfully retrieved products",
+        content =
+            @Content(
+              schema =
+                  @Schema(
+                    implementation = PaginatedResponse.class,
+                    example =
+                        "{ \"items\": [{ \"id\": 1, \"name\": \"Premium Laptop\", \"description\": \"High-performance laptop with 16GB RAM\", \"price\": 999.99, \"quantity\": 10, \"sku\": \"LAP-001\" }], \"currentPage\": 0, \"totalPages\": 1, \"totalItems\": 1, \"itemsPerPage\": 10 }"
+                  )
+            )
+      ),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
@@ -135,7 +159,12 @@ public class ProductController {
         description = "Successfully retrieved product",
         content = @Content(schema = @Schema(implementation = Product.class))
       ),
-      @ApiResponse(responseCode = "404", description = "Product not found"),
+      @ApiResponse(
+        responseCode = "404",
+        description = "Product not found",
+        content =
+            @Content(schema = @Schema(example = "{ \"error\": \"Product not found with id: 1\" }"))
+      ),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
@@ -165,9 +194,29 @@ public class ProductController {
         description = "Product updated successfully",
         content = @Content(schema = @Schema(implementation = Product.class))
       ),
-      @ApiResponse(responseCode = "400", description = "Invalid input"),
-      @ApiResponse(responseCode = "404", description = "Product not found"),
-      @ApiResponse(responseCode = "409", description = "Concurrent modification conflict"),
+      @ApiResponse(
+        responseCode = "400",
+        description = "Invalid input",
+        content =
+            @Content(schema = @Schema(example = "{ \"error\": \"Product name is required.\" }"))
+      ),
+      @ApiResponse(
+        responseCode = "404",
+        description = "Product not found",
+        content =
+            @Content(schema = @Schema(example = "{ \"error\": \"Product not found with id: 1\" }"))
+      ),
+      @ApiResponse(
+        responseCode = "409",
+        description = "Concurrent modification conflict",
+        content =
+            @Content(
+              schema =
+                  @Schema(
+                    example = "{ \"error\": \"Product data has been updated by another user.\" }"
+                  )
+            )
+      ),
       @ApiResponse(
         responseCode = "422",
         description = "Unprocessable entity due to validation errors"
@@ -197,7 +246,12 @@ public class ProductController {
   @ApiResponses(
     value = {
       @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-      @ApiResponse(responseCode = "404", description = "Product not found"),
+      @ApiResponse(
+        responseCode = "404",
+        description = "Product not found",
+        content =
+            @Content(schema = @Schema(example = "{ \"error\": \"Product not found with id: 1\" }"))
+      ),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )

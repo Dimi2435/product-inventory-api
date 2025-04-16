@@ -1,5 +1,6 @@
 package com.example.productinventory.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /**
@@ -8,10 +9,19 @@ import java.util.List;
  * @param <T> the type of items in the paginated response
  */
 public class PaginatedResponse<T> {
+  @Schema(description = "The list of items in the current page")
   private List<T> items; // The list of items in the current page
+
+  @Schema(description = "The current page number (0-based)")
   private int currentPage; // The current page number (0-based)
+
+  @Schema(description = "The total number of pages available")
   private int totalPages; // The total number of pages available
+
+  @Schema(description = "The total number of items across all pages")
   private long totalItems; // The total number of items across all pages
+
+  @Schema(description = "The number of items per page")
   private int itemsPerPage; // The number of items per page
 
   /**
