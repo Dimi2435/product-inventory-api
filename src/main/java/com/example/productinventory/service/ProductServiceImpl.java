@@ -245,20 +245,20 @@ public class ProductServiceImpl implements ProductService {
 
     // Validate sortBy field
     if (!Arrays.asList(validSortFields).contains(sortBy.toLowerCase())) {
-      throw new ProductBadRequestException(
+      throw new ProductUnprocessableEntityException(
           "Sort field must be one of: " + Arrays.toString(validSortFields));
     }
 
     // Validate sort direction
     if (!Arrays.asList(validDirections).contains(direction.toLowerCase())) {
-      throw new ProductBadRequestException("Sort direction must be 'asc' or 'desc'.");
+      throw new ProductUnprocessableEntityException("Sort direction must be 'asc' or 'desc'.");
     }
   }
 
   // New validation method for product ID
   private void validateProductId(Long id) {
     if (id <= 0) {
-      throw new ProductBadRequestException("Product ID must be a positive integer.");
+      throw new ProductUnprocessableEntityException("Product ID must be a positive integer.");
     }
   }
 }

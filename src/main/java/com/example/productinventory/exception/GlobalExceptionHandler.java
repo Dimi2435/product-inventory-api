@@ -66,6 +66,21 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 
+  @ExceptionHandler(ProductUnprocessableEntityException.class)
+  public ResponseEntity<Object> handleProductUnprocessableEntityException(
+      ProductUnprocessableEntityException ex, WebRequest request) {
+    logger.error("Unprocessable entity exception occurred: {}", ex.getMessage(), ex);
+
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("timestamp", LocalDateTime.now());
+    body.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+    body.put("error", "Unprocessable Entity");
+    body.put("message", ex.getMessage());
+    body.put("path", request.getDescription(false).replace("uri=", ""));
+
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+  }
+
   @ExceptionHandler(ProductNotFoundException.class)
   public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException ex) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
