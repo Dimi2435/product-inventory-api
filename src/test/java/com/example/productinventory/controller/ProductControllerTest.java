@@ -8,7 +8,6 @@ import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,8 +23,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 public class ProductControllerTest {
 
   @Autowired private WebTestClient webTestClient;
-
-  @Autowired private ObjectMapper objectMapper;
 
   @MockBean private ProductService productService;
 
