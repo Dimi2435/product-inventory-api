@@ -1,8 +1,10 @@
 package com.example.productinventory.controller;
 
+import com.example.productinventory.dto.PaginatedResponse;
 import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
 import com.example.productinventory.exception.ProductConflictException;
+import com.example.productinventory.exception.ProductInternalServerErrorException;
 import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
@@ -14,12 +16,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -73,11 +78,10 @@ public class ProductController {
                   "message", e.getMessage())); // Return 400 Bad Request with message
     } catch (Exception e) {
       logger.error("Unexpected error occurred while creating product: {}", e.getMessage(), e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(
-              Collections.singletonMap(
-                  "message",
-                  "An unexpected error occurred while creating the product.")); // Return 500
+
+      throw new ProductInternalServerErrorException(
+          "An unexpected error occurred while creating the product.");
+
       // Internal Server
       // Error
     }
@@ -94,39 +98,50 @@ public class ProductController {
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
-  public ResponseEntity<Page<Product>> getAllProducts(Pageable pageable) {
-    Page<Product> products = productService.getAllProducts(pageable);
-    return ResponseEntity.ok(products);
+  public ResponseEntity<PaginatedResponse<Product>> getAllProducts(
+      @Parameter(description = "Page number (0-based)", example = "0")
+          @RequestParam(defaultValue = "0")
+          int page,
+      @Parameter(description = "Number of items per page", example = "10")
+          @RequestParam(defaultValue = "10")
+          int size,
+      @Parameter(description = "Sort field", example = "name") @RequestParam(defaultValue = "name")
+          String sortBy,
+      @Parameter(description = "Sort direction", example = "asc")
+          @RequestParam(defaultValue = "asc")
+          String direction) {
+
+    logger.info(
+        "Get all products - Page: {}, Size: {}, Sort By: {}, Direction: {}",
+        page,
+        size,
+        sortBy,
+        direction);
+
+    validatePage(page);
+    validateSize(size);
+    validateSortDirection(direction);
+    validateSortField(sortBy);
+
+    Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
+    PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+
+    try {
+      Page<Product> productsPage = productService.getAllProducts(pageRequest);
+      PaginatedResponse<Product> response =
+          new PaginatedResponse<>(
+              productsPage.getContent(),
+              productsPage.getNumber(),
+              productsPage.getTotalPages(),
+              productsPage.getTotalElements(),
+              productsPage.getSize());
+      logger.info("Successfully retrieved {} products", productsPage.getTotalElements());
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      logger.error("Error retrieving products", e);
+      throw new ProductInternalServerErrorException("Failed to retrieve products");
+    }
   }
-
-  // public ResponseEntity<Page<Product>> getAllProducts(
-  //     @Parameter(description = "Page number (0-based)", example = "0")
-  //         @RequestParam(defaultValue = "0")
-  //         int page,
-  //     @Parameter(description = "Number of items per page", example = "10")
-  //         @RequestParam(defaultValue = "10")
-  //         int size,
-  //     @Parameter(description = "Sort field", example = "name") @RequestParam(defaultValue =
-  // "name")
-  //         String sortBy,
-  //     @Parameter(description = "Sort direction", example = "asc")
-  //         @RequestParam(defaultValue = "asc")
-  //         String direction) {
-
-  //   logger.info(
-  //       "Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}",
-  //       page,
-  //       size,
-  //       sortBy,
-  //       direction);
-  //   Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
-  //   PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-  //   logger.info(
-  //       "Successfully retrieved {} products",
-  //       productService.getAllProducts(pageRequest).getTotalElements());
-  //   Page<Product> products = productService.getAllProducts(pageRequest);
-  //   return ResponseEntity.ok(products);
-  // }
 
   @GetMapping("/{id}")
   @Operation(summary = "Get product by ID", description = "Retrieves a specific product by its ID")
@@ -215,6 +230,34 @@ public class ProductController {
     } catch (ProductNotFoundException e) {
       logger.warn("Product not found for deletion with ID: {}", id);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+  }
+
+  private void validatePage(int page) {
+    if (page < 0) {
+      throw new ProductBadRequestException("Page number must be zero or greater.");
+    }
+  }
+
+  private void validateSize(int size) {
+    if (size <= 0) {
+      throw new ProductBadRequestException("Size must be a positive integer.");
+    }
+  }
+
+  private void validateSortDirection(String direction) {
+    List<String> validDirections = Arrays.asList("asc", "desc");
+    if (!validDirections.contains(direction.toLowerCase())) {
+      throw new ProductBadRequestException("Sort direction must be 'asc' or 'desc'.");
+    }
+  }
+
+  private void validateSortField(String sortBy) {
+    List<String> validSortFields =
+        Arrays.asList("name", "sku", "price"); // Add valid fields based on Product class
+    if (!validSortFields.contains(sortBy.toLowerCase())) {
+      throw new ProductBadRequestException(
+          "Sort field is invalid. Valid fields are: " + validSortFields);
     }
   }
 }

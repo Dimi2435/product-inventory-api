@@ -146,10 +146,18 @@ public class ProductControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .jsonPath("$.content[0].id")
+        .jsonPath("$.items[0].id")
         .isEqualTo(product.getId())
-        .jsonPath("$.content[0].name")
-        .isEqualTo(product.getName());
+        .jsonPath("$.items[0].name")
+        .isEqualTo(product.getName())
+        .jsonPath("$.currentPage")
+        .isEqualTo(0)
+        .jsonPath("$.totalPages")
+        .isEqualTo(1)
+        .jsonPath("$.totalItems")
+        .isEqualTo(1)
+        .jsonPath("$.itemsPerPage")
+        .isEqualTo(10);
   }
 
   @Test
