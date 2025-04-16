@@ -21,10 +21,11 @@ public interface ProductService {
   Product createProduct(ProductDTO productDTO);
 
   /**
-   * Retrieves all products with pagination and sorting
+   * Retrieves all products with pagination and sorting.
    *
    * @param pageable pagination and sorting information
-   * @return page of products
+   * @param sortProperty the property to sort by
+   * @return a page of products
    */
   Page<Product> getAllProducts(Pageable pageable, String sortProperty);
 

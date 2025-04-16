@@ -8,6 +8,11 @@ import org.springframework.http.HttpStatus;
  */
 public class ProductConflictException extends ProductException {
 
+  /**
+   * Constructs a ProductConflictException with the specified message.
+   *
+   * @param message the detail message explaining the reason for the conflict
+   */
   public ProductConflictException(String message) {
     super(
         message,
@@ -16,6 +21,11 @@ public class ProductConflictException extends ProductException {
         "A conflict occurred while processing the product operation");
   }
 
+  /**
+   * Constructs a ProductConflictException for a product with the specified ID.
+   *
+   * @param id the ID of the product that caused the conflict
+   */
   public ProductConflictException(Long id) {
     this("A product with ID " + id + " already exists.");
   }

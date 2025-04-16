@@ -8,6 +8,11 @@ import org.springframework.http.HttpStatus;
  */
 public class ProductOptimisticLockException extends ProductException {
 
+  /**
+   * Constructs a ProductOptimisticLockException with the specified message.
+   *
+   * @param message the detail message explaining the reason for the optimistic lock conflict
+   */
   public ProductOptimisticLockException(String message) {
     super(
         message,
@@ -16,6 +21,14 @@ public class ProductOptimisticLockException extends ProductException {
         "The product was modified by another transaction");
   }
 
+  /**
+   * Constructs a ProductOptimisticLockException for a product with the specified ID, expected
+   * version, and actual version.
+   *
+   * @param id the ID of the product that caused the conflict
+   * @param expectedVersion the version expected by the client
+   * @param actualVersion the actual version found in the database
+   */
   public ProductOptimisticLockException(Long id, Integer expectedVersion, Integer actualVersion) {
     this(
         String.format(

@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of ProductService interface. Provides business logic for product management
- * operations.
+ * Implementation of the ProductService interface. Provides business logic for product management
+ * operations, including creating, retrieving, updating, and deleting products.
  */
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -41,6 +41,13 @@ public class ProductServiceImpl implements ProductService {
     this.productRepository = productRepository;
   }
 
+  /**
+   * Creates a new product.
+   *
+   * @param productDTO the product data to create
+   * @return the created product
+   * @throws ProductConflictException if a product with the same SKU already exists
+   */
   @Override
   @Transactional
   public Product createProduct(ProductDTO productDTO) {
@@ -66,6 +73,13 @@ public class ProductServiceImpl implements ProductService {
     return savedProduct;
   }
 
+  /**
+   * Retrieves all products with pagination and sorting.
+   *
+   * @param pageable pagination and sorting information
+   * @param sortProperty the property to sort by
+   * @return a page of products
+   */
   @Override
   public Page<Product> getAllProducts(Pageable pageable, String sortProperty) {
     validatePage(pageable.getPageNumber());
@@ -88,6 +102,13 @@ public class ProductServiceImpl implements ProductService {
     return productRepository.findAll(pageable);
   }
 
+  /**
+   * Retrieves a product by its ID.
+   *
+   * @param id the product ID
+   * @return the product
+   * @throws ProductNotFoundException if the product is not found
+   */
   @Override
   public Product getProductById(Long id) {
     logger.info("Retrieving product by ID: {}", id);
@@ -103,6 +124,16 @@ public class ProductServiceImpl implements ProductService {
             });
   }
 
+  /**
+   * Updates an existing product with optimistic locking.
+   *
+   * @param id the product ID
+   * @param productDTO the updated product data
+   * @param version the current version for optimistic locking
+   * @return the updated product
+   * @throws ProductNotFoundException if the product is not found
+   * @throws ProductOptimisticLockException if there is a version mismatch
+   */
   @Override
   @Transactional
   public Product updateProduct(Long id, ProductDTO productDTO, Integer version) {
@@ -138,6 +169,12 @@ public class ProductServiceImpl implements ProductService {
     return updatedProduct;
   }
 
+  /**
+   * Deletes a product by its ID.
+   *
+   * @param id the product ID
+   * @throws ProductNotFoundException if the product is not found
+   */
   @Override
   @Transactional
   public void deleteProduct(Long id) {
@@ -150,12 +187,27 @@ public class ProductServiceImpl implements ProductService {
     logger.info("Product deleted successfully with ID: {}", id);
   }
 
+  /**
+   * Searches products by name with pagination.
+   *
+   * @param name the name to search for
+   * @param pageable pagination information
+   * @return a page of matching products
+   */
   @Override
   public Page<Product> searchProductsByName(String name, Pageable pageable) {
     logger.info("Searching products by name: {}", name);
     return productRepository.findByNameContainingIgnoreCase(name, pageable);
   }
 
+  /**
+   * Finds products within a price range.
+   *
+   * @param minPrice minimum price
+   * @param maxPrice maximum price
+   * @param pageable pagination information
+   * @return a page of products in the specified price range
+   */
   @Override
   public Page<Product> findProductsByPriceRange(
       BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
@@ -163,6 +215,14 @@ public class ProductServiceImpl implements ProductService {
     return productRepository.findByPriceBetween(minPrice, maxPrice, pageable);
   }
 
+  /**
+   * Finds products within a quantity range.
+   *
+   * @param minQuantity minimum quantity
+   * @param maxQuantity maximum quantity
+   * @param pageable pagination information
+   * @return a page of products in the specified quantity range
+   */
   @Override
   public Page<Product> findProductsByQuantityRange(
       Integer minQuantity, Integer maxQuantity, Pageable pageable) {
@@ -170,12 +230,29 @@ public class ProductServiceImpl implements ProductService {
     return productRepository.findByQuantityBetween(minQuantity, maxQuantity, pageable);
   }
 
+  /**
+   * Finds products with low stock.
+   *
+   * @param threshold the quantity threshold
+   * @return a list of products with low stock
+   */
   @Override
   public List<Product> findLowStockProducts(Integer threshold) {
     logger.info("Finding low stock products with threshold: {}", threshold);
     return productRepository.findLowStockProducts(threshold);
   }
 
+  /**
+   * Advanced search with multiple criteria.
+   *
+   * @param name product name (optional)
+   * @param minPrice minimum price (optional)
+   * @param maxPrice maximum price (optional)
+   * @param minQuantity minimum quantity (optional)
+   * @param maxQuantity maximum quantity (optional)
+   * @param pageable pagination information
+   * @return a page of products matching the specified criteria
+   */
   @Override
   public Page<Product> searchProductsByCriteria(
       String name,
@@ -195,6 +272,13 @@ public class ProductServiceImpl implements ProductService {
         name, minPrice, maxPrice, minQuantity, maxQuantity, pageable);
   }
 
+  /**
+   * Gets a product by SKU.
+   *
+   * @param sku the product SKU
+   * @return the product if found
+   * @throws ProductNotFoundException if the product is not found
+   */
   @Override
   public Product getProductBySku(String sku) {
     logger.info("Retrieving product by SKU: {}", sku);
@@ -207,6 +291,12 @@ public class ProductServiceImpl implements ProductService {
             });
   }
 
+  /**
+   * Checks if a product exists by its SKU.
+   *
+   * @param sku the product SKU
+   * @return true if the product exists, false otherwise
+   */
   @Override
   public boolean existsBySku(String sku) {
     logger.info("Checking if product exists with SKU: {}", sku);
@@ -215,6 +305,12 @@ public class ProductServiceImpl implements ProductService {
     return exists;
   }
 
+  /**
+   * Validates the provided ProductDTO.
+   *
+   * @param productDTO the product data to validate
+   * @throws ProductUnprocessableEntityException if validation fails
+   */
   private void validateProductDTO(ProductDTO productDTO) {
     if (productDTO.getName() == null || productDTO.getName().isEmpty()) {
       throw new ProductUnprocessableEntityException("Product name is required.");
@@ -228,18 +324,37 @@ public class ProductServiceImpl implements ProductService {
     // Add more validations as necessary
   }
 
+  /**
+   * Validates the page number.
+   *
+   * @param page the page number to validate
+   * @throws ProductBadRequestException if the page number is invalid
+   */
   private void validatePage(int page) {
     if (page < 0) {
       throw new ProductBadRequestException("Page number must be zero or greater.");
     }
   }
 
+  /**
+   * Validates the page size.
+   *
+   * @param size the page size to validate
+   * @throws ProductBadRequestException if the size is invalid
+   */
   private void validateSize(int size) {
     if (size <= 0) {
       throw new ProductBadRequestException("Size must be a positive integer.");
     }
   }
 
+  /**
+   * Validates the sort parameters.
+   *
+   * @param sortBy the field to sort by
+   * @param direction the sort direction
+   * @throws ProductUnprocessableEntityException if the sort parameters are invalid
+   */
   private void validateSort(String sortBy, String direction) {
     logger.info("validateSort sortBy  and direction: {}  {}", sortBy, direction);
 
@@ -255,7 +370,12 @@ public class ProductServiceImpl implements ProductService {
     }
   }
 
-  // New validation method for product ID
+  /**
+   * Validates the product ID.
+   *
+   * @param id the product ID to validate
+   * @throws ProductUnprocessableEntityException if the ID is invalid
+   */
   private void validateProductId(Long id) {
     if (id <= 0) {
       throw new ProductUnprocessableEntityException("Product ID must be a positive integer.");

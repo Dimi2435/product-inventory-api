@@ -8,6 +8,11 @@ import org.springframework.http.HttpStatus;
  */
 public class ProductNotFoundException extends ProductException {
 
+  /**
+   * Constructs a ProductNotFoundException with the specified message.
+   *
+   * @param message the detail message explaining the reason for the product not being found
+   */
   public ProductNotFoundException(String message) {
     super(
         message,
@@ -16,10 +21,21 @@ public class ProductNotFoundException extends ProductException {
         "The requested product could not be found in the system");
   }
 
+  /**
+   * Constructs a ProductNotFoundException for a product with the specified ID.
+   *
+   * @param id the ID of the product that could not be found
+   */
   public ProductNotFoundException(Long id) {
     this("Product with ID " + id + " not found");
   }
 
+  /**
+   * Constructs a ProductNotFoundException for a product with the specified field and value.
+   *
+   * @param field the field that was used to search for the product (e.g., SKU)
+   * @param value the value of the field that was searched
+   */
   public ProductNotFoundException(String field, String value) {
     super(
         "Product with " + field + " '" + value + "' not found",
