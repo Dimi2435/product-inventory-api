@@ -1,6 +1,7 @@
 package com.example.productinventory.exception;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -82,16 +83,17 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(ProductNotFoundException.class)
-  public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException ex) {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    // Map<String, String> response = new HashMap<>();
-    // response.put("message", ex.getMessage());
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response.get("message"));
+  public ResponseEntity<Object> handleProductNotFoundException(ProductNotFoundException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
   }
 
   @ExceptionHandler(ProductOptimisticLockException.class)
-  public ResponseEntity<String> handleOptimisticLockException(ProductOptimisticLockException ex) {
-    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  public ResponseEntity<Object> handleOptimisticLockException(ProductOptimisticLockException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
   }
 
   @ExceptionHandler(ProductBadRequestException.class)

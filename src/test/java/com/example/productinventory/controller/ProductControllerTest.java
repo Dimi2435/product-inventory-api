@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
 import com.example.productinventory.exception.ProductConflictException;
+import com.example.productinventory.exception.ProductNotFoundException;
+import com.example.productinventory.exception.ProductOptimisticLockException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
 import java.math.BigDecimal;
@@ -72,6 +74,25 @@ public class ProductControllerTest {
   }
 
   @Test
+  void createProduct_invalidInput_returnsBadRequest() {
+    // Simulate invalid input by throwing a ProductBadRequestException
+    when(productService.createProduct(any(ProductDTO.class)))
+        .thenThrow(new ProductBadRequestException("Validation failed for the request"));
+
+    webTestClient
+        .post()
+        .uri("/api/v1/products")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Validation failed for the request");
+  }
+
+  @Test
   void createProduct_duplicateSku_returnsConflict() {
     when(productService.createProduct(any(ProductDTO.class)))
         .thenThrow(new ProductConflictException("A product with SKU TEST-SKU already exists."));
@@ -87,24 +108,6 @@ public class ProductControllerTest {
         .expectBody()
         .jsonPath("$.message")
         .isEqualTo("A product with SKU TEST-SKU already exists.");
-  }
-
-  @Test
-  void createProduct_invalidInput_returnsBadRequest() {
-    when(productService.createProduct(any(ProductDTO.class)))
-        .thenThrow(new ProductBadRequestException("Validation failed for the request"));
-
-    webTestClient
-        .post()
-        .uri("/api/v1/products")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(productDTO)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody()
-        .jsonPath("$.message")
-        .isEqualTo("Validation failed for the request");
   }
 
   @Test
@@ -124,21 +127,21 @@ public class ProductControllerTest {
         .isEqualTo(product.getName());
   }
 
-  // @Test
-  // void getProductById_nonExistingId_returnsNotFound() {
-  //   when(productService.getProductById(1L))
-  //       .thenThrow(new ProductNotFoundException("Product not found with ID: 1"));
+  @Test
+  void getProductById_nonExistingId_returnsNotFound() {
+    when(productService.getProductById(1L))
+        .thenThrow(new ProductNotFoundException("Product not found with ID: 1"));
 
-  //   webTestClient
-  //       .get()
-  //       .uri("/api/v1/products/1")
-  //       .exchange()
-  //       .expectStatus()
-  //       .isNotFound()
-  //       .expectBody()
-  //       .jsonPath("$.message")
-  //       .isEqualTo("Product not found with ID: 1");
-  // }
+    webTestClient
+        .get()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Product not found with ID: 1");
+  }
 
   @Test
   void updateProduct_existingIdAndValidVersion_returnsOk() {
@@ -159,41 +162,40 @@ public class ProductControllerTest {
         .isEqualTo(product.getName());
   }
 
-  // @Test
-  // void updateProduct_nonExistingId_returnsNotFound() {
-  //   when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
-  //       .thenThrow(new ProductNotFoundException("Product not found with ID: 1"));
+  @Test
+  void updateProduct_nonExistingId_returnsNotFound() {
+    when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
+        .thenThrow(new ProductNotFoundException("Product not found with ID: 1"));
 
-  //   webTestClient
-  //       .put()
-  //       .uri("/api/v1/products/1?version=1")
-  //       .contentType(MediaType.APPLICATION_JSON)
-  //       .bodyValue(productDTO)
-  //       .exchange()
-  //       .expectStatus()
-  //       .isNotFound()
-  //       .expectBody()
-  //       .jsonPath("$.message")
-  //       .isEqualTo("Product not found with ID: 1");
-  // }
+    webTestClient
+        .put()
+        .uri("/api/v1/products/1?version=1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Product not found with ID: 1");
+  }
 
-  // @Test
-  // void updateProduct_versionMismatch_returnsConflict() {
-  //   when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
-  //       .thenThrow(
-  //           new ProductOptimisticLockException("Product data has been updated by another
-  // user."));
+  @Test
+  void updateProduct_versionMismatch_returnsConflict() {
+    when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(1)))
+        .thenThrow(
+            new ProductOptimisticLockException("Product data has been updated by another user."));
 
-  //   webTestClient
-  //       .put()
-  //       .uri("/api/v1/products/1?version=1")
-  //       .contentType(MediaType.APPLICATION_JSON)
-  //       .bodyValue(productDTO)
-  //       .exchange()
-  //       .expectStatus()
-  //       .is4xxClientError()
-  //       .expectBody()
-  //       .jsonPath("$.message")
-  //       .isEqualTo("Product data has been updated by another user.");
-  // }
+    webTestClient
+        .put()
+        .uri("/api/v1/products/1?version=1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .is4xxClientError()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Product data has been updated by another user.");
+  }
 }
