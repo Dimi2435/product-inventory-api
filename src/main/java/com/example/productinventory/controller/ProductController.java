@@ -158,21 +158,22 @@ public class ProductController {
     }
   )
   public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-    Product product = productService.getProductById(id);
-    return ResponseEntity.ok(product);
-  }
+    // Validate the ID parameter
+    if (id <= 0) {
+      throw new ProductBadRequestException("Product ID must be a positive integer.");
+    }
 
-  // public ResponseEntity<Product> getProductById(
-  //     @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
-  //   try {
-  //     Product product = productService.getProductById(id);
-  //     logger.info("Successfully retrieved product: {}", product);
-  //     return ResponseEntity.ok(product);
-  //   } catch (ProductNotFoundException e) {
-  //     logger.warn("Product not found with ID: {}", id);
-  //     throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-  //   }
-  // }
+    try {
+      Product product = productService.getProductById(id);
+      return ResponseEntity.ok(product);
+    } catch (ProductNotFoundException e) {
+      logger.warn("Product not found with ID: {}", id);
+      throw e; // Let it propagate naturally
+    } catch (Exception e) {
+      logger.error("Error retrieving product with ID: {}", id, e);
+      throw new ProductInternalServerErrorException("Failed to retrieve product");
+    }
+  }
 
   @PutMapping("/{id}")
   @Operation(

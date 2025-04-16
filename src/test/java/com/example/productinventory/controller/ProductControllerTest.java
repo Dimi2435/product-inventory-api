@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
+import com.example.productinventory.exception.ProductInternalServerErrorException;
 import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
@@ -135,7 +136,6 @@ public class ProductControllerTest {
 
   @Test
   void getAllProducts_returnsOk() {
-    // Mock the service to return a page of products
     Page<Product> productPage = new PageImpl<>(List.of(product), PageRequest.of(0, 10), 1);
     when(productService.getAllProducts(any(Pageable.class))).thenReturn(productPage);
 
@@ -161,6 +161,74 @@ public class ProductControllerTest {
   }
 
   @Test
+  void getAllProducts_invalidPage_returnsBadRequest() {
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=-1&size=10")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Page number must be zero or greater.");
+  }
+
+  @Test
+  void getAllProducts_invalidSize_returnsBadRequest() {
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=0&size=0")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Size must be a positive integer.");
+  }
+
+  @Test
+  void getAllProducts_invalidSortDirection_returnsBadRequest() {
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=0&size=10&sortBy=name&direction=invalid")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Sort direction must be 'asc' or 'desc'.");
+  }
+
+  @Test
+  void getAllProducts_invalidSortField_returnsBadRequest() {
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=0&size=10&sortBy=invalidField&direction=asc")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Sort field is invalid. Valid fields are: [name, sku, price]");
+  }
+
+  @Test
+  void getAllProducts_internalServerError_returnsInternalServerError() {
+    when(productService.getAllProducts(any(Pageable.class)))
+        .thenThrow(new ProductInternalServerErrorException("Unexpected error"));
+
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=0&size=10")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Failed to retrieve products");
+  }
+
+  @Test
   void getProductById_existingId_returnsOk() {
     when(productService.getProductById(1L)).thenReturn(product);
 
@@ -180,7 +248,7 @@ public class ProductControllerTest {
   @Test
   void getProductById_nonExistingId_returnsNotFound() {
     when(productService.getProductById(1L))
-        .thenThrow(new ProductNotFoundException("Product not found"));
+        .thenThrow(new ProductNotFoundException("Product not found with ID: 1"));
 
     webTestClient
         .get()
@@ -190,6 +258,22 @@ public class ProductControllerTest {
         .isNotFound()
         .expectBody()
         .jsonPath("$.message")
-        .isEqualTo("Product not found");
+        .isEqualTo("Product not found with ID: 1");
+  }
+
+  @Test
+  void getProductById_internalServerError_returnsInternalServerError() {
+    when(productService.getProductById(1L))
+        .thenThrow(new ProductInternalServerErrorException("Unexpected error"));
+
+    webTestClient
+        .get()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Failed to retrieve product");
   }
 }
