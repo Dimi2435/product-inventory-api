@@ -22,6 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * ProductController handles API requests related to product management. It provides endpoints for
+ * creating, retrieving, updating, and deleting products.
+ */
 @RestController
 @RequestMapping("/api/v1/products")
 @Tag(name = "Product Controller", description = "APIs for managing products")
@@ -35,6 +39,12 @@ public class ProductController {
     this.productService = productService;
   }
 
+  /**
+   * Creates a new product with the provided details.
+   *
+   * @param productDTO the product details to create
+   * @return ResponseEntity containing the created product and HTTP status 201 (Created)
+   */
   @PostMapping
   @Operation(
     summary = "Create a new product",
@@ -48,14 +58,22 @@ public class ProductController {
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
-  public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO) {
+  public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
     logger.info("Creating product: {}", productDTO);
-
     Product createdProduct = productService.createProduct(productDTO);
     logger.info("Product created successfully: {}", createdProduct);
     return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
   }
 
+  /**
+   * Retrieves a paginated list of all products.
+   *
+   * @param page the page number (0-based)
+   * @param size the number of items per page
+   * @param sortBy the field to sort by
+   * @param direction the direction of sorting (asc or desc)
+   * @return ResponseEntity containing a paginated response of products
+   */
   @GetMapping
   @Operation(
     summary = "Get all products",
@@ -102,6 +120,12 @@ public class ProductController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Retrieves a specific product by its ID.
+   *
+   * @param id the ID of the product to retrieve
+   * @return ResponseEntity containing the product and HTTP status 200 (OK)
+   */
   @GetMapping("/{id}")
   @Operation(summary = "Get product by ID", description = "Retrieves a specific product by its ID")
   @ApiResponses(
@@ -111,17 +135,24 @@ public class ProductController {
         description = "Successfully retrieved product",
         content = @Content(schema = @Schema(implementation = Product.class))
       ),
-      @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
       @ApiResponse(responseCode = "404", description = "Product not found"),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
   public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-
+    logger.info("Retrieving product by ID: {}", id);
     Product product = productService.getProductById(id);
     return ResponseEntity.ok(product);
   }
 
+  /**
+   * Updates an existing product with the provided details.
+   *
+   * @param id the ID of the product to update
+   * @param productDTO the updated product details
+   * @param version the current version of the product for optimistic locking
+   * @return ResponseEntity containing the updated product and HTTP status 200 (OK)
+   */
   @PutMapping("/{id}")
   @Operation(
     summary = "Update product",
@@ -149,12 +180,18 @@ public class ProductController {
       @Valid @RequestBody ProductDTO productDTO,
       @Parameter(description = "Current version of the product", example = "1") @RequestParam
           Integer version) {
-
+    logger.info("Updating product with ID: {}", id);
     Product updatedProduct = productService.updateProduct(id, productDTO, version);
     logger.info("Product updated successfully: {}", updatedProduct);
     return ResponseEntity.ok(updatedProduct);
   }
 
+  /**
+   * Deletes a product by its ID.
+   *
+   * @param id the ID of the product to delete
+   * @return ResponseEntity with HTTP status 204 (No Content) if successful
+   */
   @DeleteMapping("/{id}")
   @Operation(summary = "Delete product", description = "Deletes a product by its ID")
   @ApiResponses(
@@ -166,6 +203,7 @@ public class ProductController {
   )
   public ResponseEntity<Void> deleteProduct(
       @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
+    logger.info("Deleting product with ID: {}", id);
     productService.deleteProduct(id);
     logger.info("Product deleted successfully with ID: {}", id);
     return ResponseEntity.noContent().build(); // Returns 204 No Content

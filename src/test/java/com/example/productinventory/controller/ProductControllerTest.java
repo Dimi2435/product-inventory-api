@@ -2,6 +2,8 @@ package com.example.productinventory.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.example.productinventory.dto.ProductDTO;
@@ -197,5 +199,34 @@ public class ProductControllerTest {
         .expectBody()
         .jsonPath("$.message")
         .isEqualTo("Product data has been updated by another user.");
+  }
+
+  @Test
+  void deleteProduct_existingId_returnsNoContent() {
+    doNothing().when(productService).deleteProduct(1L);
+
+    webTestClient
+        .delete()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .isNoContent(); // 204 No Content
+  }
+
+  @Test
+  void deleteProduct_nonExistingId_returnsNotFound() {
+    doThrow(new ProductNotFoundException("Product not found with ID: 1"))
+        .when(productService)
+        .deleteProduct(1L);
+
+    webTestClient
+        .delete()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Product not found with ID: 1");
   }
 }

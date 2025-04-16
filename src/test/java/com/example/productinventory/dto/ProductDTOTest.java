@@ -16,6 +16,14 @@ public class ProductDTOTest {
 
   private Validator validator;
 
+  private static final String VALID_NAME = "Valid Product";
+  private static final String VALID_DESCRIPTION = "A valid product description.";
+  private static final BigDecimal VALID_PRICE = BigDecimal.valueOf(10.00);
+  private static final int VALID_QUANTITY = 5;
+  private static final String VALID_SKU = "VALID-SKU";
+  private static final BigDecimal VALID_WEIGHT = BigDecimal.valueOf(1.5);
+  private static final String VALID_DIMENSIONS = "30x20x5";
+
   @BeforeEach
   public void setUp() {
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -24,14 +32,7 @@ public class ProductDTOTest {
 
   @Test
   public void testValidProductDTO() {
-    ProductDTO productDTO = new ProductDTO();
-    productDTO.setName("Valid Product");
-    productDTO.setDescription("A valid product description.");
-    productDTO.setPrice(BigDecimal.valueOf(10.00));
-    productDTO.setQuantity(5);
-    productDTO.setSku("VALID-SKU");
-    productDTO.setWeight(BigDecimal.valueOf(1.5));
-    productDTO.setDimensions("30x20x5");
+    ProductDTO productDTO = createValidProductDTO();
 
     Set<ConstraintViolation<ProductDTO>> violations = validator.validate(productDTO);
     assertTrue(violations.isEmpty(), "ProductDTO should be valid");
@@ -39,13 +40,8 @@ public class ProductDTOTest {
 
   @Test
   public void testInvalidProductDTO_NoName() {
-    ProductDTO productDTO = new ProductDTO();
-    productDTO.setDescription("A valid product description.");
-    productDTO.setPrice(BigDecimal.valueOf(10.00));
-    productDTO.setQuantity(5);
-    productDTO.setSku("VALID-SKU");
-    productDTO.setWeight(BigDecimal.valueOf(1.5));
-    productDTO.setDimensions("30x20x5");
+    ProductDTO productDTO = createValidProductDTO();
+    productDTO.setName(null); // Remove name to make it invalid
 
     Set<ConstraintViolation<ProductDTO>> violations = validator.validate(productDTO);
     assertEquals(1, violations.size());
@@ -54,14 +50,8 @@ public class ProductDTOTest {
 
   @Test
   public void testInvalidProductDTO_NegativePrice() {
-    ProductDTO productDTO = new ProductDTO();
-    productDTO.setName("Valid Product");
-    productDTO.setDescription("A valid product description.");
+    ProductDTO productDTO = createValidProductDTO();
     productDTO.setPrice(BigDecimal.valueOf(-10.00)); // Invalid price
-    productDTO.setQuantity(5);
-    productDTO.setSku("VALID-SKU");
-    productDTO.setWeight(BigDecimal.valueOf(1.5));
-    productDTO.setDimensions("30x20x5");
 
     Set<ConstraintViolation<ProductDTO>> violations = validator.validate(productDTO);
     assertEquals(1, violations.size());
@@ -70,19 +60,25 @@ public class ProductDTOTest {
 
   @Test
   public void testInvalidProductDTO_InvalidSKU() {
-    ProductDTO productDTO = new ProductDTO();
-    productDTO.setName("Valid Product");
-    productDTO.setDescription("A valid product description.");
-    productDTO.setPrice(BigDecimal.valueOf(10.00));
-    productDTO.setQuantity(5);
+    ProductDTO productDTO = createValidProductDTO();
     productDTO.setSku("INVALID SKU"); // Invalid SKU
-    productDTO.setWeight(BigDecimal.valueOf(1.5));
-    productDTO.setDimensions("30x20x5");
 
     Set<ConstraintViolation<ProductDTO>> violations = validator.validate(productDTO);
     assertEquals(1, violations.size());
     assertEquals(
         "SKU must be alphanumeric and can include dashes.",
         violations.iterator().next().getMessage());
+  }
+
+  private ProductDTO createValidProductDTO() {
+    ProductDTO productDTO = new ProductDTO();
+    productDTO.setName(VALID_NAME);
+    productDTO.setDescription(VALID_DESCRIPTION);
+    productDTO.setPrice(VALID_PRICE);
+    productDTO.setQuantity(VALID_QUANTITY);
+    productDTO.setSku(VALID_SKU);
+    productDTO.setWeight(VALID_WEIGHT);
+    productDTO.setDimensions(VALID_DIMENSIONS);
+    return productDTO;
   }
 }
