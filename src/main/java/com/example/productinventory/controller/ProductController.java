@@ -19,8 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -95,33 +94,39 @@ public class ProductController {
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
-  public ResponseEntity<Page<Product>> getAllProducts(
-      @Parameter(description = "Page number (0-based)", example = "0")
-          @RequestParam(defaultValue = "0")
-          int page,
-      @Parameter(description = "Number of items per page", example = "10")
-          @RequestParam(defaultValue = "10")
-          int size,
-      @Parameter(description = "Sort field", example = "name") @RequestParam(defaultValue = "name")
-          String sortBy,
-      @Parameter(description = "Sort direction", example = "asc")
-          @RequestParam(defaultValue = "asc")
-          String direction) {
-
-    logger.info(
-        "Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}",
-        page,
-        size,
-        sortBy,
-        direction);
-    Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
-    PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-    logger.info(
-        "Successfully retrieved {} products",
-        productService.getAllProducts(pageRequest).getTotalElements());
-    Page<Product> products = productService.getAllProducts(pageRequest);
+  public ResponseEntity<Page<Product>> getAllProducts(Pageable pageable) {
+    Page<Product> products = productService.getAllProducts(pageable);
     return ResponseEntity.ok(products);
   }
+
+  // public ResponseEntity<Page<Product>> getAllProducts(
+  //     @Parameter(description = "Page number (0-based)", example = "0")
+  //         @RequestParam(defaultValue = "0")
+  //         int page,
+  //     @Parameter(description = "Number of items per page", example = "10")
+  //         @RequestParam(defaultValue = "10")
+  //         int size,
+  //     @Parameter(description = "Sort field", example = "name") @RequestParam(defaultValue =
+  // "name")
+  //         String sortBy,
+  //     @Parameter(description = "Sort direction", example = "asc")
+  //         @RequestParam(defaultValue = "asc")
+  //         String direction) {
+
+  //   logger.info(
+  //       "Retrieving all products - Page: {}, Size: {}, Sort By: {}, Direction: {}",
+  //       page,
+  //       size,
+  //       sortBy,
+  //       direction);
+  //   Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
+  //   PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+  //   logger.info(
+  //       "Successfully retrieved {} products",
+  //       productService.getAllProducts(pageRequest).getTotalElements());
+  //   Page<Product> products = productService.getAllProducts(pageRequest);
+  //   return ResponseEntity.ok(products);
+  // }
 
   @GetMapping("/{id}")
   @Operation(summary = "Get product by ID", description = "Retrieves a specific product by its ID")
@@ -132,21 +137,27 @@ public class ProductController {
         description = "Successfully retrieved product",
         content = @Content(schema = @Schema(implementation = Product.class))
       ),
+      @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
       @ApiResponse(responseCode = "404", description = "Product not found"),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
-  public ResponseEntity<Product> getProductById(
-      @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
-    try {
-      Product product = productService.getProductById(id);
-      logger.info("Successfully retrieved product: {}", product);
-      return ResponseEntity.ok(product);
-    } catch (ProductNotFoundException e) {
-      logger.warn("Product not found with ID: {}", id);
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-    }
+  public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    Product product = productService.getProductById(id);
+    return ResponseEntity.ok(product);
   }
+
+  // public ResponseEntity<Product> getProductById(
+  //     @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
+  //   try {
+  //     Product product = productService.getProductById(id);
+  //     logger.info("Successfully retrieved product: {}", product);
+  //     return ResponseEntity.ok(product);
+  //   } catch (ProductNotFoundException e) {
+  //     logger.warn("Product not found with ID: {}", id);
+  //     throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+  //   }
+  // }
 
   @PutMapping("/{id}")
   @Operation(

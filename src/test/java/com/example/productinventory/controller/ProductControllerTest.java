@@ -6,15 +6,21 @@ import static org.mockito.Mockito.when;
 
 import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
+import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
 import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -125,5 +131,57 @@ public class ProductControllerTest {
         .expectBody()
         .jsonPath("$.message")
         .isEqualTo("An unexpected error occurred while creating the product.");
+  }
+
+  @Test
+  void getAllProducts_returnsOk() {
+    // Mock the service to return a page of products
+    Page<Product> productPage = new PageImpl<>(List.of(product), PageRequest.of(0, 10), 1);
+    when(productService.getAllProducts(any(Pageable.class))).thenReturn(productPage);
+
+    webTestClient
+        .get()
+        .uri("/api/v1/products?page=0&size=10")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.content[0].id")
+        .isEqualTo(product.getId())
+        .jsonPath("$.content[0].name")
+        .isEqualTo(product.getName());
+  }
+
+  @Test
+  void getProductById_existingId_returnsOk() {
+    when(productService.getProductById(1L)).thenReturn(product);
+
+    webTestClient
+        .get()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.id")
+        .isEqualTo(product.getId())
+        .jsonPath("$.name")
+        .isEqualTo(product.getName());
+  }
+
+  @Test
+  void getProductById_nonExistingId_returnsNotFound() {
+    when(productService.getProductById(1L))
+        .thenThrow(new ProductNotFoundException("Product not found"));
+
+    webTestClient
+        .get()
+        .uri("/api/v1/products/1")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("Product not found");
   }
 }
