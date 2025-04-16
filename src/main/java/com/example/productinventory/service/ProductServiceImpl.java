@@ -14,6 +14,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,12 @@ public class ProductServiceImpl implements ProductService {
 
   private static final Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
   private final ProductRepository productRepository;
+
+  @Value("${product.sort.fields}")
+  private String[] validSortFields;
+
+  @Value("${product.sort.directions}")
+  private String[] validDirections;
 
   @Autowired
   public ProductServiceImpl(ProductRepository productRepository) {
@@ -60,21 +67,23 @@ public class ProductServiceImpl implements ProductService {
   }
 
   @Override
-  public Page<Product> getAllProducts(Pageable pageable) {
+  public Page<Product> getAllProducts(Pageable pageable, String sortProperty) {
     validatePage(pageable.getPageNumber());
     validateSize(pageable.getPageSize());
+
     // Extract sort information
     String sortBy =
         pageable.getSort().isSorted()
-            ? pageable.getSort().getOrderFor("sortBy").getProperty()
-            : null; // Replace "yourFieldName" with the actual field you want to sort by
+            ? pageable.getSort().getOrderFor(sortProperty).getProperty()
+            : "name"; // Default sort by name
     String direction =
         pageable.getSort().isSorted()
-            ? pageable.getSort().getOrderFor("direction").getDirection().name()
-            : null;
+            ? pageable.getSort().getOrderFor(sortProperty).getDirection().name()
+            : "asc"; // Default direction
 
     // Validate sort
-    // validateSort(sortBy, direction);
+    validateSort(sortBy, direction);
+
     logger.info("Retrieving all products with pagination: {}", pageable);
     return productRepository.findAll(pageable);
   }
@@ -234,18 +243,14 @@ public class ProductServiceImpl implements ProductService {
   private void validateSort(String sortBy, String direction) {
     logger.info("validateSort sortBy  and direction: {}  {}", sortBy, direction);
 
-    // Define valid sort fields
-    List<String> validSortFields =
-        Arrays.asList("name", "price", "quantity", "sku"); // Add other valid fields as necessary
-
     // Validate sortBy field
-    if (!validSortFields.contains(sortBy.toLowerCase())) {
-      throw new ProductBadRequestException("Sort field must be one of: " + validSortFields);
+    if (!Arrays.asList(validSortFields).contains(sortBy.toLowerCase())) {
+      throw new ProductBadRequestException(
+          "Sort field must be one of: " + Arrays.toString(validSortFields));
     }
 
     // Validate sort direction
-    List<String> validDirections = Arrays.asList("asc", "desc");
-    if (!validDirections.contains(direction.toLowerCase())) {
+    if (!Arrays.asList(validDirections).contains(direction.toLowerCase())) {
       throw new ProductBadRequestException("Sort direction must be 'asc' or 'desc'.");
     }
   }

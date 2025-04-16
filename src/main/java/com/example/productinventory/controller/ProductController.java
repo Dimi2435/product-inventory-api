@@ -90,7 +90,7 @@ public class ProductController {
     Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
     PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
 
-    Page<Product> productsPage = productService.getAllProducts(pageRequest);
+    Page<Product> productsPage = productService.getAllProducts(pageRequest, sortBy);
     PaginatedResponse<Product> response =
         new PaginatedResponse<>(
             productsPage.getContent(),

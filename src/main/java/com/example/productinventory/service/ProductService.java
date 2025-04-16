@@ -26,7 +26,7 @@ public interface ProductService {
    * @param pageable pagination and sorting information
    * @return page of products
    */
-  Page<Product> getAllProducts(Pageable pageable);
+  Page<Product> getAllProducts(Pageable pageable, String sortProperty);
 
   /**
    * Retrieves a product by its ID
