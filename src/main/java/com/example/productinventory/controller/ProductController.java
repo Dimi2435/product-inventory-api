@@ -155,19 +155,19 @@ public class ProductController {
     return ResponseEntity.ok(updatedProduct);
   }
 
-  // @DeleteMapping("/{id}")
-  // @Operation(summary = "Delete product", description = "Deletes a product by its ID")
-  // @ApiResponses(
-  //   value = {
-  //     @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-  //     @ApiResponse(responseCode = "404", description = "Product not found"),
-  //     @ApiResponse(responseCode = "500", description = "Internal server error")
-  //   }
-  // )
-  // public ResponseEntity<Void> deleteProduct(
-  //     @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
-  //   productService.deleteProduct(id);
-  //   logger.info("Product deleted successfully with ID: {}", id);
-  //   return ResponseEntity.noContent().build();
-  // }
+  @DeleteMapping("/{id}")
+  @Operation(summary = "Delete product", description = "Deletes a product by its ID")
+  @ApiResponses(
+    value = {
+      @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
+      @ApiResponse(responseCode = "404", description = "Product not found"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+    }
+  )
+  public ResponseEntity<Void> deleteProduct(
+      @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
+    productService.deleteProduct(id);
+    logger.info("Product deleted successfully with ID: {}", id);
+    return ResponseEntity.noContent().build(); // Returns 204 No Content
+  }
 }
