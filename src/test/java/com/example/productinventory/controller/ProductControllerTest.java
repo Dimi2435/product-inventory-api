@@ -1,149 +1,132 @@
 package com.example.productinventory.controller;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-// @WebMvcTest(ProductController.class)
-// public class ProductControllerTest {
+import com.example.productinventory.dto.ProductDTO;
+import com.example.productinventory.exception.ProductBadRequestException;
+import com.example.productinventory.model.Product;
+import com.example.productinventory.service.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
-//   @Autowired private MockMvc mockMvc;
+@WebMvcTest(ProductController.class)
+@AutoConfigureWebTestClient
+public class ProductControllerTest {
 
-//   @MockBean private ProductService productService;
+  @Autowired private WebTestClient webTestClient;
 
-//   @Autowired private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-//   private ProductDTO productDTO;
-//   private Product product;
+  @MockBean private ProductService productService;
 
-//   @BeforeEach
-//   void setUp() {
-//     productDTO = new ProductDTO();
-//     productDTO.setName("Test Product");
-//     productDTO.setDescription("Test Description");
-//     productDTO.setPrice(BigDecimal.TEN);
-//     productDTO.setSku(null);
-//     productDTO.setWeight(BigDecimal.valueOf(1.5));
-//     productDTO.setDimensions("30x20x5");
+  private ProductDTO productDTO;
+  private Product product;
 
-//     product = new Product();
-//     product.setId(1L);
-//     product.setName("Test Product");
-//     product.setDescription("Test Description");
-//     product.setPrice(BigDecimal.TEN);
-//     product.setSku("TEST-SKU");
-//     product.setWeight(BigDecimal.valueOf(1.5));
-//     product.setDimensions("30x20x5");
-//   }
+  @BeforeEach
+  void setUp() {
+    productDTO = new ProductDTO();
+    productDTO.setName("Test Product");
+    productDTO.setDescription("Test Description");
+    productDTO.setPrice(BigDecimal.TEN);
+    productDTO.setQuantity(10);
+    productDTO.setSku("TEST-SKU");
+    productDTO.setWeight(new BigDecimal("1.5"));
+    productDTO.setDimensions("30x20x5");
 
-//   @Test
-//   void createProduct_validInput_returnsCreated() throws Exception {
-//     Mockito.when(productService.createProduct(any(ProductDTO.class))).thenReturn(product);
+    product = new Product();
+    product.setId(1L);
+    product.setName("Test Product");
+    product.setDescription("Test Description");
+    product.setPrice(BigDecimal.TEN);
+    product.setQuantity(10);
+    product.setSku("TEST-SKU");
+    product.setWeight(new BigDecimal("1.5"));
+    product.setDimensions("30x20x5");
+  }
 
-//     mockMvc
-//         .perform(
-//             MockMvcRequestBuilders.post("/api/v1/products")
-//                 .contentType(MediaType.APPLICATION_JSON)
-//                 .content(objectMapper.writeValueAsString(productDTO)))
-//         .andExpect(status().isCreated())
-//         .andExpect(jsonPath("$.id").value(product.getId()))
-//         .andExpect(jsonPath("$.name").value(product.getName()));
-//   }
+  @Test
+  void createProduct_validInput_returnsCreated() {
+    when(productService.existsBySku(productDTO.getSku())).thenReturn(false);
+    when(productService.createProduct(any(ProductDTO.class))).thenReturn(product);
 
-//   @Test
-//   void createProduct_duplicateSku_returnsConflict() throws Exception {
-//     Mockito.when(productService.createProduct(any(ProductDTO.class)))
-//         .thenThrow(new ProductConflictException("A product with SKU TEST-SKU already exists."));
+    webTestClient
+        .post()
+        .uri("/api/v1/products")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .jsonPath("$.id")
+        .isEqualTo(product.getId())
+        .jsonPath("$.name")
+        .isEqualTo(product.getName());
+  }
 
-//     mockMvc
-//         .perform(
-//             MockMvcRequestBuilders.post("/api/v1/products")
-//                 .contentType(MediaType.APPLICATION_JSON)
-//                 .content(objectMapper.writeValueAsString(productDTO)))
-//         .andExpect(status().isConflict())
-//         .andExpect(jsonPath("$.message").value("A product with SKU TEST-SKU already exists."));
-//   }
+  @Test
+  void createProduct_duplicateSku_returnsConflict() {
+    when(productService.existsBySku(eq(productDTO.getSku()))).thenReturn(true);
 
-  // @Test
-  // void getAllProducts_returnsOk() throws Exception {
-  //   List<Product> products = Collections.singletonList(product);
-  //   Page<Product> productPage = new PageImpl<>(products);
-  //   Mockito.when(productService.getAllProducts(any())).thenReturn(productPage);
+    webTestClient
+        .post()
+        .uri("/api/v1/products")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .is4xxClientError()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("A product with SKU TEST-SKU already exists.");
+  }
 
-  //   mockMvc
-  //       .perform(MockMvcRequestBuilders.get("/api/v1/products"))
-  //       .andExpect(status().isOk())
-  //       .andExpect(jsonPath("$.content[0].id").value(product.getId()))
-  //       .andExpect(jsonPath("$.content[0].name").value(product.getName()));
-  // }
+  @Test
+  void createProduct_badRequest_returnsBadRequest() {
+    when(productService.existsBySku(productDTO.getSku())).thenReturn(false);
+    when(productService.createProduct(any(ProductDTO.class)))
+        .thenThrow(new ProductBadRequestException("Validation failed for the request"));
 
-  // @Test
-  // void getProductById_existingId_returnsOk() throws Exception {
-  //   Mockito.when(productService.getProductById(1L)).thenReturn(product);
+    webTestClient
+        .post()
+        .uri("/api/v1/products")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo(
+            "Validation failed for the request"); // Ensure this matches the response structure
+  }
 
-  //   mockMvc
-  //       .perform(MockMvcRequestBuilders.get("/api/v1/products/1"))
-  //       .andExpect(status().isOk())
-  //       .andExpect(jsonPath("$.id").value(product.getId()))
-  //       .andExpect(jsonPath("$.name").value(product.getName()));
-  // }
+  @Test
+  void createProduct_internalServerError_returnsInternalServerError() {
+    when(productService.existsBySku(productDTO.getSku())).thenReturn(false);
+    when(productService.createProduct(any(ProductDTO.class)))
+        .thenThrow(new RuntimeException("Unexpected error"));
 
-  // @Test
-  // void getProductById_nonExistingId_returnsNotFound() throws Exception {
-  //   Mockito.when(productService.getProductById(1L))
-  //       .thenThrow(new ProductNotFoundException("Product not found"));
-
-  //   mockMvc
-  //       .perform(MockMvcRequestBuilders.get("/api/v1/products/1"))
-  //       .andExpect(status().isNotFound())
-  //       .andExpect(jsonPath("$.message").value("Product not found"));
-  // }
-
-  // @Test
-  // void updateProduct_existingId_returnsOk() throws Exception {
-  //   Mockito.when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(0)))
-  //       .thenReturn(product);
-
-  //   mockMvc
-  //       .perform(
-  //           MockMvcRequestBuilders.put("/api/v1/products/1?version=0")
-  //               .contentType(MediaType.APPLICATION_JSON)
-  //               .content(objectMapper.writeValueAsString(productDTO)))
-  //       .andExpect(status().isOk())
-  //       .andExpect(jsonPath("$.id").value(product.getId()))
-  //       .andExpect(jsonPath("$.name").value(product.getName()));
-  // }
-
-  // @Test
-  // void updateProduct_nonExistingId_returnsNotFound() throws Exception {
-  //   Mockito.when(productService.updateProduct(eq(1L), any(ProductDTO.class), eq(0)))
-  //       .thenThrow(new ProductNotFoundException("Product not found"));
-
-  //   mockMvc
-  //       .perform(
-  //           MockMvcRequestBuilders.put("/api/v1/products/1?version=0")
-  //               .contentType(MediaType.APPLICATION_JSON)
-  //               .content(objectMapper.writeValueAsString(productDTO)))
-  //       .andExpect(status().isNotFound())
-  //       .andExpect(jsonPath("$.message").value("Product not found"));
-  // }
-
-  // @Test
-  // void deleteProduct_existingId_returnsNoContent() throws Exception {
-  //   doNothing().when(productService).deleteProduct(1L);
-
-  //   mockMvc
-  //       .perform(MockMvcRequestBuilders.delete("/api/v1/products/1"))
-  //       .andExpect(status().isNoContent());
-  // }
-
-  // @Test
-  // void deleteProduct_nonExistingId_returnsNotFound() throws Exception {
-  //   doThrow(new ProductNotFoundException("Product not found"))
-  //       .when(productService)
-  //       .deleteProduct(1L);
-
-  //   mockMvc
-  //       .perform(MockMvcRequestBuilders.delete("/api/v1/products/1"))
-  //       .andExpect(status().isNotFound())
-  //       .andExpect(jsonPath("$.message").value("Product not found"));
-  // }
-// }
+    webTestClient
+        .post()
+        .uri("/api/v1/products")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(productDTO)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .jsonPath("$.message")
+        .isEqualTo("An unexpected error occurred while creating the product.");
+  }
+}

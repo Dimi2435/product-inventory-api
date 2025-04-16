@@ -3,7 +3,6 @@ package com.example.productinventory.controller;
 import com.example.productinventory.dto.ProductDTO;
 import com.example.productinventory.exception.ProductBadRequestException;
 import com.example.productinventory.exception.ProductConflictException;
-import com.example.productinventory.exception.ProductInternalServerErrorException;
 import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
@@ -15,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,21 +46,13 @@ public class ProductController {
   )
   @ApiResponses(
     value = {
-      @ApiResponse(
-        responseCode = "201",
-        description = "Product created successfully",
-        content = @Content(schema = @Schema(implementation = Product.class))
-      ),
+      @ApiResponse(responseCode = "201", description = "Product created successfully"),
       @ApiResponse(responseCode = "400", description = "Invalid input"),
-      @ApiResponse(responseCode = "401", description = "Authentication required"),
-      @ApiResponse(responseCode = "403", description = "User does not have permission"),
-      @ApiResponse(responseCode = "404", description = "Related resource not found"),
       @ApiResponse(responseCode = "409", description = "Conflict with current state"),
-      @ApiResponse(responseCode = "422", description = "Validation errors"),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
-  public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
+  public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO) {
     logger.info("Creating product: {}", productDTO);
 
     // Check for duplicate SKU
@@ -70,37 +62,25 @@ public class ProductController {
           "A product with SKU " + productDTO.getSku() + " already exists.");
     }
 
-    //  // Check for category existence if category_id is provided
-    //  if (productDTO.getCategoryId() != null) {
-    //   // Placeholder for category existence check
-    //   boolean categoryExists = false; // Initialize to false
-
-    //   // This should be replaced with actual category service check when implemented
-    //   // Example: categoryExists = categoryService.existsById(productDTO.getCategoryId());
-
-    //   // Simulating the check for demonstration purposes
-    //   if (!categoryExists) {
-    //       logger.warn("Category ID {} provided, but it does not exist.",
-    // productDTO.getCategoryId());
-    //       throw new ProductNotFoundException("Category with ID " + productDTO.getCategoryId() + "
-    // does not exist.");
-    //   }
-    // }
-
     try {
       Product createdProduct = productService.createProduct(productDTO);
       logger.info("Product created successfully: {}", createdProduct);
       return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
     } catch (ProductBadRequestException e) {
       logger.error("Bad request error: {}", e.getMessage());
-      throw e; // Rethrow to be handled by the global exception handler
-    } catch (ProductConflictException e) {
-      logger.error("Conflict error: {}", e.getMessage());
-      throw e; // Rethrow to be handled by the global exception handler
+      return ResponseEntity.badRequest()
+          .body(
+              Collections.singletonMap(
+                  "message", e.getMessage())); // Return 400 Bad Request with message
     } catch (Exception e) {
       logger.error("Unexpected error occurred while creating product: {}", e.getMessage(), e);
-      throw new ProductInternalServerErrorException(
-          "An unexpected error occurred while creating the product.");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(
+              Collections.singletonMap(
+                  "message",
+                  "An unexpected error occurred while creating the product.")); // Return 500
+      // Internal Server
+      // Error
     }
   }
 

@@ -93,15 +93,16 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ProductInternalServerErrorException.class)
   public ResponseEntity<Object> handleProductInternalServerErrorException(
       ProductInternalServerErrorException ex, WebRequest request) {
-    logger.error("Unexpected error occurred: {}", ex.getMessage(), ex);
+    logger.error("Internal server error: {}", ex.getMessage(), ex);
 
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("timestamp", LocalDateTime.now());
     body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
     body.put("error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
-    body.put("message", "An unexpected error occurred");
+    body.put("message", "Internal server error");
     body.put("path", request.getDescription(false).replace("uri=", ""));
 
-    return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(new ErrorResponse(ex.getMessage()));
   }
 }
