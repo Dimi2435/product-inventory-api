@@ -66,6 +66,19 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 
+  @ExceptionHandler(ProductNotFoundException.class)
+  public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    // Map<String, String> response = new HashMap<>();
+    // response.put("message", ex.getMessage());
+    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response.get("message"));
+  }
+
+  @ExceptionHandler(ProductOptimisticLockException.class)
+  public ResponseEntity<String> handleOptimisticLockException(ProductOptimisticLockException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
   @ExceptionHandler(ProductBadRequestException.class)
   public ResponseEntity<Object> handleProductBadRequestException(
       ProductBadRequestException ex, WebRequest request) {
@@ -105,4 +118,17 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(new ErrorResponse(ex.getMessage()));
   }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<String> handleGenericException(Exception ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body("An unexpected error occurred.");
+  }
+
+  // private ResponseEntity<Map<String, String>> createErrorResponse(
+  //     HttpStatus status, String message) {
+  //   Map<String, String> errorResponse = new HashMap<>();
+  //   errorResponse.put("message", message);
+  //   return ResponseEntity.status(status).body(errorResponse);
+  // }
 }

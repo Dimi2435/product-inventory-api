@@ -57,4 +57,6 @@ public class ProductDTO {
     required = true
   )
   private String dimensions;
+
+  private Integer version; // Include version for updates
 }

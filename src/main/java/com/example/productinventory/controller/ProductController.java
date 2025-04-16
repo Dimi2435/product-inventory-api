@@ -2,10 +2,6 @@ package com.example.productinventory.controller;
 
 import com.example.productinventory.dto.PaginatedResponse;
 import com.example.productinventory.dto.ProductDTO;
-import com.example.productinventory.exception.ProductBadRequestException;
-import com.example.productinventory.exception.ProductConflictException;
-import com.example.productinventory.exception.ProductInternalServerErrorException;
-import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,9 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -59,32 +51,9 @@ public class ProductController {
   public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO) {
     logger.info("Creating product: {}", productDTO);
 
-    // Check for duplicate SKU
-    if (productService.existsBySku(productDTO.getSku())) {
-      logger.warn("Conflict: Product with SKU {} already exists", productDTO.getSku());
-      throw new ProductConflictException(
-          "A product with SKU " + productDTO.getSku() + " already exists.");
-    }
-
-    try {
-      Product createdProduct = productService.createProduct(productDTO);
-      logger.info("Product created successfully: {}", createdProduct);
-      return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
-    } catch (ProductBadRequestException e) {
-      logger.error("Bad request error: {}", e.getMessage());
-      return ResponseEntity.badRequest()
-          .body(
-              Collections.singletonMap(
-                  "message", e.getMessage())); // Return 400 Bad Request with message
-    } catch (Exception e) {
-      logger.error("Unexpected error occurred while creating product: {}", e.getMessage(), e);
-
-      throw new ProductInternalServerErrorException(
-          "An unexpected error occurred while creating the product.");
-
-      // Internal Server
-      // Error
-    }
+    Product createdProduct = productService.createProduct(productDTO);
+    logger.info("Product created successfully: {}", createdProduct);
+    return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
   }
 
   @GetMapping
@@ -118,29 +87,19 @@ public class ProductController {
         sortBy,
         direction);
 
-    validatePage(page);
-    validateSize(size);
-    validateSortDirection(direction);
-    validateSortField(sortBy);
-
     Sort.Direction sortDirection = Sort.Direction.fromString(direction.toLowerCase());
     PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
 
-    try {
-      Page<Product> productsPage = productService.getAllProducts(pageRequest);
-      PaginatedResponse<Product> response =
-          new PaginatedResponse<>(
-              productsPage.getContent(),
-              productsPage.getNumber(),
-              productsPage.getTotalPages(),
-              productsPage.getTotalElements(),
-              productsPage.getSize());
-      logger.info("Successfully retrieved {} products", productsPage.getTotalElements());
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      logger.error("Error retrieving products", e);
-      throw new ProductInternalServerErrorException("Failed to retrieve products");
-    }
+    Page<Product> productsPage = productService.getAllProducts(pageRequest);
+    PaginatedResponse<Product> response =
+        new PaginatedResponse<>(
+            productsPage.getContent(),
+            productsPage.getNumber(),
+            productsPage.getTotalPages(),
+            productsPage.getTotalElements(),
+            productsPage.getSize());
+    logger.info("Successfully retrieved {} products", productsPage.getTotalElements());
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/{id}")
@@ -158,21 +117,9 @@ public class ProductController {
     }
   )
   public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-    // Validate the ID parameter
-    if (id <= 0) {
-      throw new ProductBadRequestException("Product ID must be a positive integer.");
-    }
 
-    try {
-      Product product = productService.getProductById(id);
-      return ResponseEntity.ok(product);
-    } catch (ProductNotFoundException e) {
-      logger.warn("Product not found with ID: {}", id);
-      throw e; // Let it propagate naturally
-    } catch (Exception e) {
-      logger.error("Error retrieving product with ID: {}", id, e);
-      throw new ProductInternalServerErrorException("Failed to retrieve product");
-    }
+    Product product = productService.getProductById(id);
+    return ResponseEntity.ok(product);
   }
 
   @PutMapping("/{id}")
@@ -190,6 +137,10 @@ public class ProductController {
       @ApiResponse(responseCode = "400", description = "Invalid input"),
       @ApiResponse(responseCode = "404", description = "Product not found"),
       @ApiResponse(responseCode = "409", description = "Concurrent modification conflict"),
+      @ApiResponse(
+        responseCode = "422",
+        description = "Unprocessable entity due to validation errors"
+      ),
       @ApiResponse(responseCode = "500", description = "Internal server error")
     }
   )
@@ -198,67 +149,25 @@ public class ProductController {
       @Valid @RequestBody ProductDTO productDTO,
       @Parameter(description = "Current version of the product", example = "1") @RequestParam
           Integer version) {
-    try {
-      Product updatedProduct = productService.updateProduct(id, productDTO, version);
-      logger.info("Product updated successfully: {}", updatedProduct);
-      return ResponseEntity.ok(updatedProduct);
-    } catch (ProductNotFoundException e) {
-      logger.warn("Product not found for update with ID: {}", id);
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-    } catch (jakarta.persistence.OptimisticLockException e) {
-      logger.error("Concurrent modification conflict for product ID: {}", id);
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT,
-          "Product data has been updated by another user. Please refresh and try again.");
-    }
+
+    Product updatedProduct = productService.updateProduct(id, productDTO, version);
+    logger.info("Product updated successfully: {}", updatedProduct);
+    return ResponseEntity.ok(updatedProduct);
   }
 
-  @DeleteMapping("/{id}")
-  @Operation(summary = "Delete product", description = "Deletes a product by its ID")
-  @ApiResponses(
-    value = {
-      @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-      @ApiResponse(responseCode = "404", description = "Product not found"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
-    }
-  )
-  public ResponseEntity<Void> deleteProduct(
-      @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
-    try {
-      productService.deleteProduct(id);
-      logger.info("Product deleted successfully with ID: {}", id);
-      return ResponseEntity.noContent().build();
-    } catch (ProductNotFoundException e) {
-      logger.warn("Product not found for deletion with ID: {}", id);
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-    }
-  }
-
-  private void validatePage(int page) {
-    if (page < 0) {
-      throw new ProductBadRequestException("Page number must be zero or greater.");
-    }
-  }
-
-  private void validateSize(int size) {
-    if (size <= 0) {
-      throw new ProductBadRequestException("Size must be a positive integer.");
-    }
-  }
-
-  private void validateSortDirection(String direction) {
-    List<String> validDirections = Arrays.asList("asc", "desc");
-    if (!validDirections.contains(direction.toLowerCase())) {
-      throw new ProductBadRequestException("Sort direction must be 'asc' or 'desc'.");
-    }
-  }
-
-  private void validateSortField(String sortBy) {
-    List<String> validSortFields =
-        Arrays.asList("name", "sku", "price"); // Add valid fields based on Product class
-    if (!validSortFields.contains(sortBy.toLowerCase())) {
-      throw new ProductBadRequestException(
-          "Sort field is invalid. Valid fields are: " + validSortFields);
-    }
-  }
+  // @DeleteMapping("/{id}")
+  // @Operation(summary = "Delete product", description = "Deletes a product by its ID")
+  // @ApiResponses(
+  //   value = {
+  //     @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
+  //     @ApiResponse(responseCode = "404", description = "Product not found"),
+  //     @ApiResponse(responseCode = "500", description = "Internal server error")
+  //   }
+  // )
+  // public ResponseEntity<Void> deleteProduct(
+  //     @Parameter(description = "Product ID", example = "1") @PathVariable Long id) {
+  //   productService.deleteProduct(id);
+  //   logger.info("Product deleted successfully with ID: {}", id);
+  //   return ResponseEntity.noContent().build();
+  // }
 }

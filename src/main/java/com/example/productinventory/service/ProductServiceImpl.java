@@ -1,11 +1,15 @@
 package com.example.productinventory.service;
 
 import com.example.productinventory.dto.ProductDTO;
+import com.example.productinventory.exception.ProductBadRequestException;
+import com.example.productinventory.exception.ProductConflictException;
 import com.example.productinventory.exception.ProductNotFoundException;
 import com.example.productinventory.exception.ProductOptimisticLockException;
+import com.example.productinventory.exception.ProductUnprocessableEntityException;
 import com.example.productinventory.model.Product;
 import com.example.productinventory.repository.ProductRepository;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +38,13 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public Product createProduct(ProductDTO productDTO) {
     logger.info("Creating new product: {}", productDTO.getName());
+
+    // Check for duplicate SKU
+    if (existsBySku(productDTO.getSku())) {
+      throw new ProductConflictException(
+          "A product with SKU " + productDTO.getSku() + " already exists.");
+    }
+
     Product product = new Product();
     product.setName(productDTO.getName());
     product.setDescription(productDTO.getDescription());
@@ -50,6 +61,20 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public Page<Product> getAllProducts(Pageable pageable) {
+    validatePage(pageable.getPageNumber());
+    validateSize(pageable.getPageSize());
+    // Extract sort information
+    String sortBy =
+        pageable.getSort().isSorted()
+            ? pageable.getSort().getOrderFor("sortBy").getProperty()
+            : null; // Replace "yourFieldName" with the actual field you want to sort by
+    String direction =
+        pageable.getSort().isSorted()
+            ? pageable.getSort().getOrderFor("direction").getDirection().name()
+            : null;
+
+    // Validate sort
+    // validateSort(sortBy, direction);
     logger.info("Retrieving all products with pagination: {}", pageable);
     return productRepository.findAll(pageable);
   }
@@ -57,6 +82,9 @@ public class ProductServiceImpl implements ProductService {
   @Override
   public Product getProductById(Long id) {
     logger.info("Retrieving product by ID: {}", id);
+
+    validateProductId(id);
+
     return productRepository
         .findById(id)
         .orElseThrow(
@@ -70,6 +98,10 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public Product updateProduct(Long id, ProductDTO productDTO, Integer version) {
     logger.info("Updating product with ID: {}", id);
+
+    validateProductId(id); // Validate the ID before proceeding
+    validateProductDTO(productDTO); // Validate input fields
+
     Product existingProduct =
         productRepository
             .findById(id)
@@ -172,5 +204,56 @@ public class ProductServiceImpl implements ProductService {
     boolean exists = productRepository.existsBySku(sku);
     logger.info("Product exists with SKU {}: {}", sku, exists);
     return exists;
+  }
+
+  private void validateProductDTO(ProductDTO productDTO) {
+    if (productDTO.getName() == null || productDTO.getName().isEmpty()) {
+      throw new ProductUnprocessableEntityException("Product name is required.");
+    }
+    if (productDTO.getPrice() == null || productDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+      throw new ProductUnprocessableEntityException("Product price must be a positive value.");
+    }
+    if (productDTO.getQuantity() < 0) {
+      throw new ProductUnprocessableEntityException("Product quantity cannot be negative.");
+    }
+    // Add more validations as necessary
+  }
+
+  private void validatePage(int page) {
+    if (page < 0) {
+      throw new ProductBadRequestException("Page number must be zero or greater.");
+    }
+  }
+
+  private void validateSize(int size) {
+    if (size <= 0) {
+      throw new ProductBadRequestException("Size must be a positive integer.");
+    }
+  }
+
+  private void validateSort(String sortBy, String direction) {
+    logger.info("validateSort sortBy  and direction: {}  {}", sortBy, direction);
+
+    // Define valid sort fields
+    List<String> validSortFields =
+        Arrays.asList("name", "price", "quantity", "sku"); // Add other valid fields as necessary
+
+    // Validate sortBy field
+    if (!validSortFields.contains(sortBy.toLowerCase())) {
+      throw new ProductBadRequestException("Sort field must be one of: " + validSortFields);
+    }
+
+    // Validate sort direction
+    List<String> validDirections = Arrays.asList("asc", "desc");
+    if (!validDirections.contains(direction.toLowerCase())) {
+      throw new ProductBadRequestException("Sort direction must be 'asc' or 'desc'.");
+    }
+  }
+
+  // New validation method for product ID
+  private void validateProductId(Long id) {
+    if (id <= 0) {
+      throw new ProductBadRequestException("Product ID must be a positive integer.");
+    }
   }
 }
